@@ -1,0 +1,165 @@
+name: Android Build & Release Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version code and check changes
+        id: version_check
+        run: |
+          FILE="app/build.gradle"
+          [ -f "app/build.gradle.kts" ] && FILE="app/build.gradle.kts"
+          
+          CURRENT=$(grep -m1 'versionCode' "$FILE" | grep -oE '[0-9]+')
+          if [ -z "$CURRENT" ]; then
+            echo "Error: versionCode tidak ditemukan!"
+            exit 1
+          fi
+
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            PREVIOUS=$(git show HEAD~1:"$FILE" 2>/dev/null | grep -m1 'versionCode' | grep -oE '[0-9]+')
+          else
+            PREVIOUS=""
+          fi
+
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT" != "$PREVIOUS" ]; then
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+            echo "versionCode berubah ($PREVIOUS -> $CURRENT). Jalur RELEASE diproses."
+          else
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            echo "versionCode sama ($CURRENT). Jalur DEBUG diproses."
+          fi
+
+      - name: Check if tag already exists (Release Only)
+        if: steps.version_check.outputs.is_release == 'true'
+        id: check_tag
+        run: |
+          TAG="v${{ steps.version_check.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $TAG sudah ada di repository. Menghentikan workflow agar tidak duplicate."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push tag (Release Only)
+        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "v${{ steps.version_check.outputs.version }}"
+          git push origin "v${{ steps.version_check.outputs.version }}"
+
+      - name: Set up JDK 17
+        if: steps.version_check.outputs.is_release == 'false' || steps.check_tag.outputs.exists == 'false'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        if: steps.version_check.outputs.is_release == 'false' || steps.check_tag.outputs.exists == 'false'
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        if: steps.version_check.outputs.is_release == 'false' || steps.check_tag.outputs.exists == 'false'
+        run: chmod +x gradlew
+
+      # ================= RELEASE BUILD FLOW =================
+      - name: Build release APKs
+        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
+        run: ./gradlew assembleRelease --stacktrace
+
+      - name: Create GitHub Release
+        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version_check.outputs.version }}
+          files: |
+            app/build/outputs/apk/**/release/*.apk
+          generate_release_notes: true
+
+      - name: Zip SDK26 Release APKs
+        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
+        run: |
+          mkdir -p output_zip_release
+          cd app/build/outputs/apk/android26/release/
+          zip -r ../../../../../../output_zip_release/app-sdk26-release.zip .
+
+      - name: Zip SDK33 Release APKs
+        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
+        run: |
+          mkdir -p output_zip_release
+          cd app/build/outputs/apk/android33/release/
+          zip -r ../../../../../../output_zip_release/app-sdk33-release.zip .
+
+      - name: Upload SDK26 Release ZIP Artifact
+        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-sdk26-release
+          path: output_zip_release/app-sdk26-release.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload SDK33 Release ZIP Artifact
+        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-sdk33-release
+          path: output_zip_release/app-sdk33-release.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      # ================= DEBUG BUILD FLOW =================
+      - name: Build debug APKs
+        if: steps.version_check.outputs.is_release == 'false'
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Zip SDK26 Debug APKs
+        if: steps.version_check.outputs.is_release == 'false'
+        run: |
+          mkdir -p output_zip_debug
+          cd app/build/outputs/apk/android26/debug/
+          zip -r ../../../../../../output_zip_debug/app-sdk26-debug.zip .
+
+      - name: Zip SDK33 Debug APKs
+        if: steps.version_check.outputs.is_release == 'false'
+        run: |
+          mkdir -p output_zip_debug
+          cd app/build/outputs/apk/android33/debug/
+          zip -r ../../../../../../output_zip_debug/app-sdk33-debug.zip .
+
+      - name: Upload SDK26 Debug ZIP Artifact
+        if: steps.version_check.outputs.is_release == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-sdk26-debug
+          path: output_zip_debug/app-sdk26-debug.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload SDK33 Debug ZIP Artifact
+        if: steps.version_check.outputs.is_release == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-sdk33-debug
+          path: output_zip_debug/app-sdk33-debug.zip
+          if-no-files-found: error
+          retention-days: 30

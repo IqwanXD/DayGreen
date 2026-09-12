@@ -2,6 +2,7 @@ package pro.sketchware.activities.main.fragments.projects;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -11,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.RadioButton;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -20,7 +22,6 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.view.MenuProvider;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.DiffUtil;
 
 import com.besome.sketch.adapters.ProjectsAdapter;
@@ -29,7 +30,6 @@ import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
 import com.google.android.material.transition.MaterialFadeThrough;
 
 import java.util.ArrayList;
@@ -45,14 +45,12 @@ import a.a.a.lC;
 import dev.chrisbanes.insetter.Insetter;
 import extensions.anbui.daydream.project.RestoreProject;
 import mod.hey.studios.project.ProjectTracker;
-import mod.hey.studios.project.backup.BackupRestoreManager;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
 import pro.sketchware.databinding.MyprojectsBinding;
 import pro.sketchware.databinding.SortProjectDialogBinding;
 import pro.sketchware.utility.UI;
 
-//DR
 public class ProjectsFragment extends DA {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final List<HashMap<String, Object>> projectsList = new ArrayList<>();
@@ -124,10 +122,6 @@ public class ProjectsFragment extends DA {
         openProjectSettings.launch(intent);
     }
 
-    public void restoreProject() {
-        new BackupRestoreManager(getActivity(), this).restore();
-    }
-
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState) {
         binding = MyprojectsBinding.inflate(inflater, parent, false);
@@ -137,16 +131,12 @@ public class ProjectsFragment extends DA {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null; // avoid memory leaks
+        binding = null;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         preference = new DB(requireContext(), "project");
-
-        ExtendedFloatingActionButton fab = requireActivity().findViewById(R.id.create_new_project);
-        fab.setOnClickListener((v) -> toProjectSettingsActivity());
-        Insetter.builder().margin(WindowInsetsCompat.Type.navigationBars()).applyToView(fab);
 
         binding.swipeRefresh.setOnRefreshListener(this::refreshProjectsList);
         binding.swipeRefresh.setColorSchemeColors(MaterialColors.getColor(requireContext(), R.attr.colorPrimary, 0));
@@ -156,22 +146,13 @@ public class ProjectsFragment extends DA {
         binding.myprojects.setAdapter(projectsAdapter);
         binding.myprojects.setHasFixedSize(true);
 
-        binding.myprojects.post(this::refreshProjectsList); // wait for RecyclerView to be ready
+        binding.myprojects.post(this::refreshProjectsList);
         UI.addSystemWindowInsetToPadding(binding.specialActionContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.loadingContainer, true, false, true, true);
         UI.addSystemWindowInsetToPadding(binding.titleContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.myprojects, true, false, true, true);
 
-        binding.nestedScroll.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
-            if (scrollY > oldScrollY) {
-                fab.shrink();
-            } else if (scrollY < oldScrollY) {
-                fab.extend();
-            }
-        });
-
         binding.iconSort.setOnClickListener(v -> showProjectSortingDialog());
-        binding.specialAction.projectOne.setOnClickListener(v -> restoreProject());
 
         RestoreProject.setupDropFileTo(getActivity(), binding.specialAction.getRoot());
 
@@ -181,6 +162,19 @@ public class ProjectsFragment extends DA {
                 menuInflater.inflate(R.menu.projects_fragment_menu, menu);
                 projectsSearchView = (SearchView) menu.findItem(R.id.searchProjects).getActionView();
                 if (projectsSearchView != null) {
+                    // Hilangkan underline (garis bawah) pada SearchView
+                    View searchPlate = projectsSearchView.findViewById(androidx.appcompat.R.id.search_plate);
+                    if (searchPlate != null) {
+                        searchPlate.setBackgroundColor(Color.TRANSPARENT);
+                    }
+
+                    // Hilangkan ikon pencarian internalSearchView saat fokus
+                    ImageView searchMagIcon = projectsSearchView.findViewById(androidx.appcompat.R.id.search_mag_icon);
+                    if (searchMagIcon != null) {
+                        searchMagIcon.setImageDrawable(null);
+                        searchMagIcon.setVisibility(View.GONE);
+                    }
+
                     projectsSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
                         @Override
                         public boolean onQueryTextChange(String s) {
@@ -226,19 +220,17 @@ public class ProjectsFragment extends DA {
     }
 
     public void refreshProjectsList() {
-        // Check if the fragment is still attached to the activity
         if (!isAdded()) return;
 
-        // Don't load project list without having permissions
         if (!c()) {
             if (binding.swipeRefresh.isRefreshing()) binding.swipeRefresh.setRefreshing(false);
-            ((MainActivity) requireActivity()).s(); // ask for permissions
+            ((MainActivity) requireActivity()).s();
             return;
         }
 
         executorService.execute(() -> {
             List<HashMap<String, Object>> loadedProjects = lC.a();
-            loadedProjects.sort(new ProjectComparator(preference.d("sortBy"),preference.a("pinnedProject", "-1")));
+            loadedProjects.sort(new ProjectComparator(preference.d("sortBy"), preference.a("pinnedProject", "-1")));
 
             DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new ProjectDiffCallback(projectsList, loadedProjects));
 

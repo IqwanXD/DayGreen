@@ -1,10 +1,8 @@
 package pro.sketchware.activities.main.activities;
 
 import android.Manifest;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
@@ -52,7 +50,6 @@ import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.UI;
-import pro.sketchware.utility.theme.ThemeManager;
 
 public class MainActivity extends BasePermissionAppCompatActivity {
     private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
@@ -60,10 +57,15 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private DB u;
     private Snackbar storageAccessDenied;
     private MainBinding binding;
+    private boolean isFabMenuOpen = false;
 
     private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(true) {
         @Override
         public void handleOnBackPressed() {
+            if (isFabMenuOpen) {
+                closeFabMenu();
+                return;
+            }
             setEnabled(false);
             binding.drawerLayout.closeDrawers();
         }
@@ -163,7 +165,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         if (u1I1 <= 0) {
             u.a("U1I1", System.currentTimeMillis());
         }
-        if (System.currentTimeMillis() - u1I1 > /* (a day) */ 1000 * 60 * 60 * 24) {
+        if (System.currentTimeMillis() - u1I1 > 1000 * 60 * 60 * 24) {
             u.a("U1I0", Integer.valueOf(u1I0 + 1));
         }
 
@@ -196,6 +198,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             public void onDrawerStateChanged(int newState) {
             }
         });
+
+        setupFabMenu();
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -260,6 +264,49 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         DRSetup.startNow(this);
     }
 
+    private void setupFabMenu() {
+        binding.createNewProject.setOnClickListener(v -> {
+            if (isFabMenuOpen) {
+                closeFabMenu();
+            } else {
+                openFabMenu();
+            }
+        });
+
+        binding.fabOverlay.setOnClickListener(v -> closeFabMenu());
+
+        binding.fabCreate.setOnClickListener(v -> {
+            closeFabMenu();
+            if (projectsFragment != null) {
+                projectsFragment.toProjectSettingsActivity();
+            }
+        });
+
+        binding.fabRestore.setOnClickListener(v -> {
+            closeFabMenu();
+            if (backupRestoreManager == null) {
+                backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
+            }
+            backupRestoreManager.restore();
+        });
+    }
+
+    private void openFabMenu() {
+        isFabMenuOpen = true;
+        binding.createNewProject.animate().rotation(45f).setDuration(200).start();
+        binding.layoutFabCreate.setVisibility(View.VISIBLE);
+        binding.layoutFabRestore.setVisibility(View.VISIBLE);
+        binding.fabOverlay.setVisibility(View.VISIBLE);
+    }
+
+    private void closeFabMenu() {
+        isFabMenuOpen = false;
+        binding.createNewProject.animate().rotation(0f).setDuration(200).start();
+        binding.layoutFabCreate.setVisibility(View.GONE);
+        binding.layoutFabRestore.setVisibility(View.GONE);
+        binding.fabOverlay.setVisibility(View.GONE);
+    }
+
     private Fragment getFragmentForNavId(int navItemId) {
         if (navItemId == R.id.item_projects) {
             return projectsFragment;
@@ -314,7 +361,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onResume() {
         super.onResume();
 
-        /* Check if the device is running low on storage space */
         long freeMegabytes = GB.c();
         if (freeMegabytes < 100 && freeMegabytes > 0) {
             showNoticeNotEnoughFreeStorageSpace();
@@ -347,7 +393,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
                 dialog.setIcon(R.drawable.ic_mtrl_warning);
                 dialog.setTitle("Android 11 storage access");
-                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid " + "taking ages to build projects. Don't worry, we can't do more to storage than " + "with current granted permissions.");
+                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid taking ages to build projects. Don't worry, we can't do more to storage than with current granted permissions.");
                 dialog.setPositiveButton(Helper.getResString(R.string.common_word_settings), (v, which) -> {
                     FileUtil.requestAllFilesAccessPermission(this);
                     v.dismiss();
@@ -358,7 +404,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                         if (!optOutFile.createNewFile())
                             throw new IOException("Failed to create file " + optOutFile);
                     } catch (IOException e) {
-                        Log.e("MainActivity", "Error while trying to create " + "\"Don't show Android 11 hint\" dialog file: " + e.getMessage(), e);
+                        Log.e("MainActivity", "Error while trying to create dialog file: " + e.getMessage(), e);
                     }
                     v.dismiss();
                 });
