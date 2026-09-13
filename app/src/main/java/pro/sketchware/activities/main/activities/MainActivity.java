@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
@@ -29,7 +30,9 @@ import androidx.fragment.app.FragmentTransaction;
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,21 +41,30 @@ import java.util.Objects;
 import a.a.a.DB;
 import a.a.a.GB;
 import extensions.anbui.daydream.configs.Configs;
+import extensions.anbui.daydream.file.FilesTools;
+import extensions.anbui.daydream.git.GitQuickLook;
 import extensions.anbui.daydream.setup.DRSetup;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
+import mod.hilal.saif.activities.tools.ConfigActivity;
+import mod.jbk.util.LogUtil;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
+import pro.sketchware.activities.about.AboutActivity;
 import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
+import pro.sketchware.activities.main.fragments.projects_store.ProjectsStoreFragment;
 import pro.sketchware.databinding.MainBinding;
+import pro.sketchware.lib.base.BottomSheetDialogView;
 import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.UI;
 
+//DR
 public class MainActivity extends BasePermissionAppCompatActivity {
     private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
+    private static final String PROJECTS_STORE_FRAGMENT_TAG = "projects_store_fragment";
     private ActionBarDrawerToggle drawerToggle;
     private DB u;
     private Snackbar storageAccessDenied;
@@ -62,15 +74,12 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(true) {
         @Override
         public void handleOnBackPressed() {
-            if (isFabMenuOpen) {
-                closeFabMenu();
-                return;
-            }
             setEnabled(false);
             binding.drawerLayout.closeDrawers();
         }
     };
     private ProjectsFragment projectsFragment;
+    private ProjectsStoreFragment projectsStoreFragment;
     private Fragment activeFragment;
     private BackupRestoreManager backupRestoreManager;
     public static boolean needRefreshProjectList = false;
@@ -129,7 +138,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                     break;
 
                 case 212:
-                    if (data != null && !(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty() && isStoragePermissionGranted()) {
+                    if (!(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty() && isStoragePermissionGranted()) {
                         if (activeFragment instanceof ProjectsFragment) {
                             projectsFragment.refreshProjectsList();
                         }
@@ -149,10 +158,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         SplashScreen.installSplashScreen(this);
         super.onCreate(savedInstanceState);
-        
         enableEdgeToEdgeNoContrast();
 
         binding = MainBinding.inflate(getLayoutInflater());
+
         setContentView(binding.getRoot());
         setSupportActionBar(binding.toolbar);
 
@@ -172,15 +181,19 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle(null);
 
+        binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
+
         drawerToggle = new ActionBarDrawerToggle(this, binding.drawerLayout, R.string.app_name, R.string.app_name);
         binding.drawerLayout.addDrawerListener(drawerToggle);
-        binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
-        binding.drawerLayout.setDrawerElevation(0f);
         binding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
             @Override
             public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
-                float moveFactor = drawerView.getWidth() * slideOffset;
-                binding.layoutCoordinator.setTranslationX(moveFactor);
+                float drawerWidth = drawerView.getWidth();
+                binding.layoutCoordinator.setTranslationX(slideOffset * drawerWidth);
+
+                float scale = 1f - (0.08f * slideOffset);
+                binding.layoutCoordinator.setScaleX(scale);
+                binding.layoutCoordinator.setScaleY(scale);
             }
 
             @Override
@@ -191,7 +204,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
             @Override
             public void onDrawerClosed(@NonNull View drawerView) {
-                binding.layoutCoordinator.setTranslationX(0f);
             }
 
             @Override
@@ -199,7 +211,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         });
 
-        setupFabMenu();
+        // Setup Klik listener Main FAB (Speed Dial)
+        binding.fabMain.setOnClickListener(v -> toggleFabMenu());
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -247,13 +260,29 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         }
 
+        binding.bottomNav.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.item_projects) {
+                navigateToProjectsFragment();
+                return true;
+            } else if (id == R.id.item_sketchub) {
+                navigateToSketchubFragment();
+                return true;
+            }
+            return false;
+        });
+
         if (savedInstanceState != null) {
             projectsFragment = (ProjectsFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_FRAGMENT_TAG);
+            projectsStoreFragment = (ProjectsStoreFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG);
             currentNavItemId = savedInstanceState.getInt("selected_tab_id");
             Fragment current = getFragmentForNavId(currentNavItemId);
             if (current instanceof ProjectsFragment) {
                 navigateToProjectsFragment();
+            } else if (current instanceof ProjectsStoreFragment) {
+                navigateToSketchubFragment();
             }
+
             return;
         }
 
@@ -264,52 +293,51 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         DRSetup.startNow(this);
     }
 
-    private void setupFabMenu() {
-        binding.createNewProject.setOnClickListener(v -> {
-            if (isFabMenuOpen) {
-                closeFabMenu();
-            } else {
-                openFabMenu();
-            }
-        });
-
-        binding.fabOverlay.setOnClickListener(v -> closeFabMenu());
-
-        binding.fabCreate.setOnClickListener(v -> {
+    private void toggleFabMenu() {
+        if (!isFabMenuOpen) {
+            showFabMenu();
+        } else {
             closeFabMenu();
-            if (projectsFragment != null) {
-                projectsFragment.toProjectSettingsActivity();
-            }
-        });
-
-        binding.fabRestore.setOnClickListener(v -> {
-            closeFabMenu();
-            if (backupRestoreManager == null) {
-                backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
-            }
-            backupRestoreManager.restore();
-        });
+        }
     }
 
-    private void openFabMenu() {
+    private void showFabMenu() {
         isFabMenuOpen = true;
-        binding.createNewProject.animate().rotation(45f).setDuration(200).start();
-        binding.layoutFabCreate.setVisibility(View.VISIBLE);
-        binding.layoutFabRestore.setVisibility(View.VISIBLE);
-        binding.fabOverlay.setVisibility(View.VISIBLE);
+
+        binding.createNewProject.setVisibility(View.VISIBLE);
+        binding.restoreProject.setVisibility(View.VISIBLE);
+
+        binding.createNewProject.animate().translationY(0f).alpha(1.0f).setDuration(200).start();
+        binding.restoreProject.animate().translationY(0f).alpha(1.0f).setDuration(200).start();
+
+        binding.fabMain.animate().rotation(45f).setDuration(200).start();
     }
 
     private void closeFabMenu() {
         isFabMenuOpen = false;
-        binding.createNewProject.animate().rotation(0f).setDuration(200).start();
-        binding.layoutFabCreate.setVisibility(View.GONE);
-        binding.layoutFabRestore.setVisibility(View.GONE);
-        binding.fabOverlay.setVisibility(View.GONE);
+
+        binding.createNewProject.animate()
+                .translationY(20f)
+                .alpha(0.0f)
+                .setDuration(200)
+                .withEndAction(() -> binding.createNewProject.setVisibility(View.GONE))
+                .start();
+
+        binding.restoreProject.animate()
+                .translationY(20f)
+                .alpha(0.0f)
+                .setDuration(200)
+                .withEndAction(() -> binding.restoreProject.setVisibility(View.GONE))
+                .start();
+
+        binding.fabMain.animate().rotation(0f).setDuration(200).start();
     }
 
     private Fragment getFragmentForNavId(int navItemId) {
         if (navItemId == R.id.item_projects) {
             return projectsFragment;
+        } else if (navItemId == R.id.item_sketchub) {
+            return projectsStoreFragment;
         }
         throw new IllegalArgumentException();
     }
@@ -329,7 +357,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         FragmentManager fm = getSupportFragmentManager();
         FragmentTransaction transaction = fm.beginTransaction();
 
-        binding.createNewProject.show();
+        binding.fabContainer.setVisibility(View.VISIBLE);
+        binding.fabMain.show();
+
         if (activeFragment != null) transaction.hide(activeFragment);
         if (fm.findFragmentByTag(PROJECTS_FRAGMENT_TAG) == null) {
             shouldShow = false;
@@ -340,6 +370,53 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         activeFragment = projectsFragment;
         currentNavItemId = R.id.item_projects;
+    }
+
+    private void navigateToSketchubFragment() {
+        if (projectsStoreFragment == null) {
+            projectsStoreFragment = new ProjectsStoreFragment();
+        }
+
+        boolean shouldShow = true;
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction transaction = fm.beginTransaction();
+
+        if (isFabMenuOpen) {
+            closeFabMenu();
+        }
+        binding.fabMain.hide();
+        binding.fabContainer.setVisibility(View.GONE);
+
+        if (activeFragment != null) transaction.hide(activeFragment);
+        if (fm.findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG) == null) {
+            shouldShow = false;
+            transaction.add(binding.container.getId(), projectsStoreFragment, PROJECTS_STORE_FRAGMENT_TAG);
+        }
+        if (shouldShow) transaction.show(projectsStoreFragment);
+        transaction.commit();
+
+        activeFragment = projectsStoreFragment;
+        currentNavItemId = R.id.item_sketchub;
+    }
+
+    @NonNull
+    private BottomSheetDialogView getBottomSheetDialogView() {
+        BottomSheetDialogView bottomSheetDialog = new BottomSheetDialogView(this);
+        bottomSheetDialog.setTitle("Major changes in v7.0.0");
+        bottomSheetDialog.setDescription("""
+                There have been major changes since v6.3.0 fix1, \
+                and it's very important to know them all if you want your projects to still work.
+                
+                You can view all changes whenever you want at the About Sketchware Pro screen.""");
+
+        bottomSheetDialog.setPositiveButton("View changes", (dialog, which) -> {
+            ConfigActivity.setSetting(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER, true);
+            Intent launcher = new Intent(this, AboutActivity.class);
+            launcher.putExtra("select", "changelog");
+            startActivity(launcher);
+        });
+        bottomSheetDialog.setCancelable(false);
+        return bottomSheetDialog;
     }
 
     @Override
@@ -360,7 +437,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
-
         long freeMegabytes = GB.c();
         if (freeMegabytes < 100 && freeMegabytes > 0) {
             showNoticeNotEnoughFreeStorageSpace();
@@ -377,11 +453,29 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             projectsFragment.refreshProjectsList();
             needRefreshProjectList = false;
         }
-    }
 
-    @Override
-    public void onPause() {
-        super.onPause();
+        GitQuickLook.cleanUp(this);
+
+        if (!ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER) && FilesTools.isPermissionGranted(this)) {
+            BottomSheetDialogView bottomSheetDialog = getBottomSheetDialogView();
+            bottomSheetDialog.getPositiveButton().setEnabled(false);
+
+            CountDownTimer countDownTimer = new CountDownTimer(3000, 1000) {
+                @Override
+                public void onTick(long millisUntilFinished) {
+                    bottomSheetDialog.setPositiveButtonText(millisUntilFinished / 1000 + "");
+                }
+
+                @Override
+                public void onFinish() {
+                    bottomSheetDialog.setPositiveButtonText("View changes");
+                    bottomSheetDialog.getPositiveButton().setEnabled(true);
+                }
+            };
+            countDownTimer.start();
+
+            if (!isFinishing()) bottomSheetDialog.show();
+        }
     }
 
     private void allFilesAccessCheck() {
@@ -404,7 +498,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                         if (!optOutFile.createNewFile())
                             throw new IOException("Failed to create file " + optOutFile);
                     } catch (IOException e) {
-                        Log.e("MainActivity", "Error while trying to create dialog file: " + e.getMessage(), e);
+                        Log.e("MainActivity", "Error while trying to create \"Don't show Android 11 hint\" dialog file: " + e.getMessage(), e);
                     }
                     v.dismiss();
                 });

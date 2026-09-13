@@ -27,10 +27,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="8dp"
-                android:layout_marginBottom="8dp"
                 app:cardBackgroundColor="?colorSurfaceContainer"
-                app:cardCornerRadius="50dp"
-                app:strokeWidth="0dp">
+                app:cardCornerRadius="50dp">
 
                 <com.google.android.material.appbar.MaterialToolbar
                     android:id="@+id/toolbar"
@@ -54,112 +52,70 @@
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <!-- Overlay touch/click listener to close FAB menu when tapped outside -->
-        <View
-            android:id="@+id/fab_overlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#33000000"
-            android:clickable="true"
-            android:focusable="true"
-            android:visibility="gone" />
-
-        <!-- FAB SpeedDial Layout -->
         <LinearLayout
-            android:id="@+id/fab_menu_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <com.google.android.material.divider.MaterialDivider
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:dividerColor="?attr/colorSurfaceContainerHighest" />
+
+            <com.google.android.material.bottomnavigation.BottomNavigationView
+                android:id="@+id/bottom_nav"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                app:menu="@menu/main_menu" />
+
+        </LinearLayout>
+
+        <!-- Speed Dial FAB Container -->
+        <LinearLayout
+            android:id="@+id/fab_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="16dp"
             android:layout_marginBottom="16dp"
             android:gravity="end"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior">
 
-            <!-- Sub FAB 1: Restore -->
-            <LinearLayout
-                android:id="@+id/layout_fab_restore"
+            <!-- Sub FAB 1: Restore Project -->
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+                android:id="@+id/restore_project"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone">
+                android:text="Restore"
+                android:visibility="gone"
+                app:icon="@drawable/ic_mtrl_history"
+                tools:ignore="ContentDescription" />
 
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="2dp"
-                    app:contentPaddingBottom="4dp"
-                    app:contentPaddingLeft="8dp"
-                    app:contentPaddingRight="8dp"
-                    app:contentPaddingTop="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Restore Project"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="13sp" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/fab_restore"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:fabSize="mini"
-                    app:srcCompat="@drawable/ic_mtrl_folder"
-                    tools:ignore="ContentDescription" />
-            </LinearLayout>
-
-            <!-- Sub FAB 2: Create -->
-            <LinearLayout
-                android:id="@+id/layout_fab_create"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="12dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:visibility="gone">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    app:cardBackgroundColor="?attr/colorSurface"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="2dp"
-                    app:contentPaddingBottom="4dp"
-                    app:contentPaddingLeft="8dp"
-                    app:contentPaddingRight="8dp"
-                    app:contentPaddingTop="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Create Project"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="13sp" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/fab_create"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    app:fabSize="mini"
-                    app:srcCompat="@drawable/ic_mtrl_add"
-                    tools:ignore="ContentDescription" />
-            </LinearLayout>
-
-            <!-- Main Floating Action Button -->
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
+            <!-- Sub FAB 2: Create New Project -->
+            <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/create_new_project"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:srcCompat="@drawable/ic_mtrl_add"
+                android:layout_marginBottom="16dp"
+                android:text="Create"
+                android:visibility="gone"
+                app:icon="@drawable/ic_mtrl_add"
                 tools:ignore="ContentDescription" />
+
+            <!-- Main FAB: Hanya Icon Folder -->
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab_main"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:icon="@drawable/ic_mtrl_folder"
+                app:srcCompat="@drawable/ic_mtrl_folder"
+                tools:ignore="ContentDescription" />
+
         </LinearLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
