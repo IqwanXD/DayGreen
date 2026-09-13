@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
@@ -42,7 +43,6 @@ import a.a.a.DB;
 import a.a.a.GB;
 import extensions.anbui.daydream.configs.Configs;
 import extensions.anbui.daydream.file.FilesTools;
-// ❌ REMOVED: import extensions.anbui.daydream.git.GitQuickLook;
 import extensions.anbui.daydream.setup.DRSetup;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
@@ -61,7 +61,6 @@ import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.UI;
 
-//DR
 public class MainActivity extends BasePermissionAppCompatActivity {
     private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
     private static final String PROJECTS_STORE_FRAGMENT_TAG = "projects_store_fragment";
@@ -74,6 +73,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(true) {
         @Override
         public void handleOnBackPressed() {
+            if (isFabMenuOpen) {
+                closeFabMenu();
+                return;
+            }
             setEnabled(false);
             binding.drawerLayout.closeDrawers();
         }
@@ -211,8 +214,31 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         });
 
-        // Setup Klik listener Main FAB (Speed Dial)
+        // Setup Listener FAB & Sub-FAB
         binding.fabMain.setOnClickListener(v -> toggleFabMenu());
+
+        binding.createNewProject.setOnClickListener(v -> {
+            closeFabMenu();
+            // TODO: Tambahkan aksi create project di sini
+            Toast.makeText(this, "Create Project", Toast.LENGTH_SHORT).show();
+        });
+
+        binding.restoreProject.setOnClickListener(v -> {
+            closeFabMenu();
+            // TODO: Tambahkan aksi restore project di sini
+            if (backupRestoreManager != null && projectsFragment != null) {
+                // Contoh: backupRestoreManager.showRestoreDialog();
+                Toast.makeText(this, "Restore Project", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Menutup FAB menu ketika mengklik area luar
+        binding.layoutCoordinator.setOnTouchListener((v, event) -> {
+            if (isFabMenuOpen && event.getAction() == MotionEvent.ACTION_DOWN) {
+                closeFabMenu();
+            }
+            return false;
+        });
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -307,30 +333,35 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         binding.createNewProject.setVisibility(View.VISIBLE);
         binding.restoreProject.setVisibility(View.VISIBLE);
 
-        binding.createNewProject.animate().translationY(0f).alpha(1.0f).setDuration(200).start();
-        binding.restoreProject.animate().translationY(0f).alpha(1.0f).setDuration(200).start();
+        binding.createNewProject.animate()
+                .translationY(0f)
+                .alpha(1.0f)
+                .setDuration(150)
+                .start();
 
-        binding.fabMain.animate().rotation(45f).setDuration(200).start();
+        binding.restoreProject.animate()
+                .translationY(0f)
+                .alpha(1.0f)
+                .setDuration(150)
+                .start();
     }
 
     private void closeFabMenu() {
         isFabMenuOpen = false;
 
         binding.createNewProject.animate()
-                .translationY(20f)
+                .translationY(16f)
                 .alpha(0.0f)
-                .setDuration(200)
-                .withEndAction(() -> binding.createNewProject.setVisibility(View.GONE))
+                .setDuration(150)
+                .withEndAction(() -> binding.createNewProject.setVisibility(View.INVISIBLE))
                 .start();
 
         binding.restoreProject.animate()
-                .translationY(20f)
+                .translationY(16f)
                 .alpha(0.0f)
-                .setDuration(200)
-                .withEndAction(() -> binding.restoreProject.setVisibility(View.GONE))
+                .setDuration(150)
+                .withEndAction(() -> binding.restoreProject.setVisibility(View.INVISIBLE))
                 .start();
-
-        binding.fabMain.animate().rotation(0f).setDuration(200).start();
     }
 
     private Fragment getFragmentForNavId(int navItemId) {
@@ -453,8 +484,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             projectsFragment.refreshProjectsList();
             needRefreshProjectList = false;
         }
-
-        // ❌ REMOVED: GitQuickLook.cleanUp(this);
 
         if (!ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER) && FilesTools.isPermissionGranted(this)) {
             BottomSheetDialogView bottomSheetDialog = getBottomSheetDialogView();

@@ -95,35 +95,21 @@ jobs:
             app/build/outputs/apk/**/release/*.apk
           generate_release_notes: true
 
-      - name: Zip SDK26 Release APKs
-        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
-        run: |
-          mkdir -p output_zip_release
-          cd app/build/outputs/apk/android26/release/
-          zip -r ../../../../../../output_zip_release/app-sdk26-release.zip .
-
-      - name: Zip SDK33 Release APKs
-        if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
-        run: |
-          mkdir -p output_zip_release
-          cd app/build/outputs/apk/android33/release/
-          zip -r ../../../../../../output_zip_release/app-sdk33-release.zip .
-
-      - name: Upload SDK26 Release ZIP Artifact
+      - name: Upload SDK26 Release APK Artifact
         if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: app-sdk26-release
-          path: output_zip_release/app-sdk26-release.zip
+          path: app/build/outputs/apk/android26/release/*.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload SDK33 Release ZIP Artifact
+      - name: Upload SDK33 Release APK Artifact
         if: steps.version_check.outputs.is_release == 'true' && steps.check_tag.outputs.exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: app-sdk33-release
-          path: output_zip_release/app-sdk33-release.zip
+          path: app/build/outputs/apk/android33/release/*.apk
           if-no-files-found: error
           retention-days: 30
 
@@ -132,34 +118,20 @@ jobs:
         if: steps.version_check.outputs.is_release == 'false'
         run: ./gradlew assembleDebug --stacktrace
 
-      - name: Zip SDK26 Debug APKs
-        if: steps.version_check.outputs.is_release == 'false'
-        run: |
-          mkdir -p output_zip_debug
-          cd app/build/outputs/apk/android26/debug/
-          zip -r ../../../../../../output_zip_debug/app-sdk26-debug.zip .
-
-      - name: Zip SDK33 Debug APKs
-        if: steps.version_check.outputs.is_release == 'false'
-        run: |
-          mkdir -p output_zip_debug
-          cd app/build/outputs/apk/android33/debug/
-          zip -r ../../../../../../output_zip_debug/app-sdk33-debug.zip .
-
-      - name: Upload SDK26 Debug ZIP Artifact
+      - name: Upload SDK26 Debug APK Artifact
         if: steps.version_check.outputs.is_release == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: app-sdk26-debug
-          path: output_zip_debug/app-sdk26-debug.zip
+          path: app/build/outputs/apk/android26/debug/*.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload SDK33 Debug ZIP Artifact
+      - name: Upload SDK33 Debug APK Artifact
         if: steps.version_check.outputs.is_release == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: app-sdk33-debug
-          path: output_zip_debug/app-sdk33-debug.zip
+          path: app/build/outputs/apk/android33/debug/*.apk
           if-no-files-found: error
           retention-days: 30

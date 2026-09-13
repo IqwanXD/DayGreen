@@ -80,9 +80,11 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="80dp"
             android:gravity="end"
             android:orientation="vertical"
+            android:clipChildren="false"
+            android:clipToPadding="false"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior">
 
             <!-- Sub FAB 1: Restore Project -->
@@ -92,7 +94,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:text="Restore"
-                android:visibility="gone"
+                android:visibility="invisible"
+                android:alpha="0"
                 app:icon="@drawable/ic_mtrl_history"
                 tools:ignore="ContentDescription" />
 
@@ -103,11 +106,12 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:text="Create"
-                android:visibility="gone"
+                android:visibility="invisible"
+                android:alpha="0"
                 app:icon="@drawable/ic_mtrl_add"
                 tools:ignore="ContentDescription" />
 
-            <!-- Main FAB: Hanya Icon Folder -->
+            <!-- Main FAB -->
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/fab_main"
                 android:layout_width="wrap_content"
