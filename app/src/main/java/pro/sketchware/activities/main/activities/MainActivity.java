@@ -42,7 +42,7 @@ import a.a.a.DB;
 import a.a.a.GB;
 import extensions.anbui.daydream.configs.Configs;
 import extensions.anbui.daydream.file.FilesTools;
-import extensions.anbui.daydream.git.GitQuickLook;
+// ❌ REMOVED: import extensions.anbui.daydream.git.GitQuickLook;
 import extensions.anbui.daydream.setup.DRSetup;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
@@ -454,7 +454,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             needRefreshProjectList = false;
         }
 
-        GitQuickLook.cleanUp(this);
+        // ❌ REMOVED: GitQuickLook.cleanUp(this);
 
         if (!ConfigActivity.isSettingEnabled(ConfigActivity.SETTING_CRITICAL_UPDATE_REMINDER) && FilesTools.isPermissionGranted(this)) {
             BottomSheetDialogView bottomSheetDialog = getBottomSheetDialogView();
