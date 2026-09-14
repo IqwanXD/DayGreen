@@ -2,26 +2,23 @@ package pro.sketchware.activities.main.fragments.projects;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.RadioGroup;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SearchView;
-import androidx.core.view.MenuProvider;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.DiffUtil;
 
 import com.besome.sketch.adapters.ProjectsAdapter;
@@ -30,6 +27,8 @@ import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
 import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.shape.CornerFamily;
+import com.google.android.material.shape.ShapeAppearanceModel;
 import com.google.android.material.transition.MaterialFadeThrough;
 
 import java.util.ArrayList;
@@ -42,13 +41,11 @@ import java.util.stream.IntStream;
 import a.a.a.DA;
 import a.a.a.DB;
 import a.a.a.lC;
-import dev.chrisbanes.insetter.Insetter;
 import extensions.anbui.daydream.project.RestoreProject;
 import mod.hey.studios.project.ProjectTracker;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
 import pro.sketchware.databinding.MyprojectsBinding;
-import pro.sketchware.databinding.SortProjectDialogBinding;
 import pro.sketchware.utility.UI;
 
 public class ProjectsFragment extends DA {
@@ -71,8 +68,8 @@ public class ProjectsFragment extends DA {
         }
     });
     private DB preference;
-    private SearchView projectsSearchView;
-    private MenuProvider menuProvider;
+    private EditText searchEditText;
+    private View searchMagIcon;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -145,6 +142,7 @@ public class ProjectsFragment extends DA {
         projectsAdapter = new ProjectsAdapter(this, projectsList);
         binding.myprojects.setAdapter(projectsAdapter);
         binding.myprojects.setHasFixedSize(true);
+        applyUniformCornerRadiusToRecyclerView();
 
         binding.myprojects.post(this::refreshProjectsList);
         UI.addSystemWindowInsetToPadding(binding.specialActionContainer, true, false, true, false);
@@ -152,71 +150,64 @@ public class ProjectsFragment extends DA {
         UI.addSystemWindowInsetToPadding(binding.titleContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.myprojects, true, false, true, true);
 
-        binding.iconSort.setOnClickListener(v -> showProjectSortingDialog());
+        View iconSort = requireActivity().findViewById(R.id.icon_sort);
+        if (iconSort != null) {
+            iconSort.setOnClickListener(v -> showProjectSortingDialog());
+        }
 
         RestoreProject.setupDropFileTo(getActivity(), binding.specialAction.getRoot());
 
-        menuProvider = new MenuProvider() {
-            @Override
-            public void onCreateMenu(@NonNull Menu menu, @NonNull MenuInflater menuInflater) {
-                menuInflater.inflate(R.menu.projects_fragment_menu, menu);
-                projectsSearchView = (SearchView) menu.findItem(R.id.searchProjects).getActionView();
-                if (projectsSearchView != null) {
-                    // Hilangkan underline (garis bawah) pada SearchView
-                    View searchPlate = projectsSearchView.findViewById(androidx.appcompat.R.id.search_plate);
-                    if (searchPlate != null) {
-                        searchPlate.setBackgroundColor(Color.TRANSPARENT);
-                    }
+        searchEditText = requireActivity().findViewById(R.id.search_edit_text);
+        searchMagIcon = requireActivity().findViewById(R.id.search_mag_icon);
 
-                    // Hilangkan ikon pencarian internalSearchView saat fokus
-                    ImageView searchMagIcon = projectsSearchView.findViewById(androidx.appcompat.R.id.search_mag_icon);
-                    if (searchMagIcon != null) {
-                        searchMagIcon.setImageDrawable(null);
-                        searchMagIcon.setVisibility(View.GONE);
-                    }
+        if (searchEditText != null) {
+            searchEditText.setBackgroundColor(android.graphics.Color.TRANSPARENT);
 
-                    projectsSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                        @Override
-                        public boolean onQueryTextChange(String s) {
-                            projectsAdapter.filterData(s);
-
-                            if (s.isEmpty()) {
-                                binding.specialActionContainer.setVisibility(View.VISIBLE);
-                                binding.titleContainer.setVisibility(View.VISIBLE);
-                            } else {
-                                binding.specialActionContainer.setVisibility(View.GONE);
-                                binding.titleContainer.setVisibility(View.GONE);
-                            }
-
-                            return false;
-                        }
-
-                        @Override
-                        public boolean onQueryTextSubmit(String s) {
-                            return false;
-                        }
-                    });
+            searchEditText.setOnFocusChangeListener((v, hasFocus) -> {
+                if (searchMagIcon != null) {
+                    searchMagIcon.setVisibility(hasFocus ? View.GONE : View.VISIBLE);
                 }
-            }
+            });
 
-            @Override
-            public boolean onMenuItemSelected(@NonNull MenuItem menuItem) {
-                return false;
-            }
-        };
+            searchEditText.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
-        requireActivity().addMenuProvider(menuProvider);
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (projectsAdapter != null) {
+                        projectsAdapter.filterData(s.toString());
+                    }
+                    if (binding.specialActionContainer != null && binding.titleContainer != null) {
+                        if (s.toString().isEmpty()) {
+                            binding.specialActionContainer.setVisibility(View.VISIBLE);
+                            binding.titleContainer.setVisibility(View.VISIBLE);
+                        } else {
+                            binding.specialActionContainer.setVisibility(View.GONE);
+                            binding.titleContainer.setVisibility(View.GONE);
+                        }
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
+    }
+
+    private void applyUniformCornerRadiusToRecyclerView() {
+        if (binding.myprojects instanceof com.google.android.material.card.MaterialCardView) {
+            ShapeAppearanceModel shape = ShapeAppearanceModel.builder()
+                    .setAllCorners(CornerFamily.ROUNDED, getResources().getDisplayMetrics().density * 32)
+                    .build();
+            ((com.google.android.material.card.MaterialCardView) binding.myprojects).setShapeAppearanceModel(shape);
+        }
     }
 
     @Override
     public void onHiddenChanged(boolean hidden) {
         super.onHiddenChanged(hidden);
         if (getActivity() == null) return;
-        if (hidden) {
-            requireActivity().removeMenuProvider(menuProvider);
-        } else {
-            requireActivity().addMenuProvider(menuProvider);
-        }
     }
 
     public void refreshProjectsList() {
@@ -243,8 +234,8 @@ public class ProjectsFragment extends DA {
                 projectsList.clear();
                 projectsList.addAll(loadedProjects);
                 diffResult.dispatchUpdatesTo(projectsAdapter);
-                if (projectsSearchView != null)
-                    projectsAdapter.filterData(projectsSearchView.getQuery().toString());
+                if (searchEditText != null)
+                    projectsAdapter.filterData(searchEditText.getText().toString());
             });
         });
     }
@@ -279,41 +270,74 @@ public class ProjectsFragment extends DA {
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(requireActivity());
         dialog.setTitle("Sort options");
 
-        SortProjectDialogBinding dialogBinding = SortProjectDialogBinding.inflate(LayoutInflater.from(requireActivity()));
-        RadioButton sortByName = dialogBinding.sortByName;
-        RadioButton sortByID = dialogBinding.sortByID;
-        RadioButton sortOrderAsc = dialogBinding.sortOrderAsc;
-        RadioButton sortOrderDesc = dialogBinding.sortOrderDesc;
+        LinearLayout container = new LinearLayout(requireActivity());
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, pad / 2);
+
+        RadioGroup radioGroup = new RadioGroup(requireActivity());
+        radioGroup.setOrientation(RadioGroup.VERTICAL);
+
+        RadioButton sortByName = new RadioButton(requireActivity());
+        sortByName.setText("aA - zZ (Name Ascending)");
+        sortByName.setId(View.generateViewId());
+
+        RadioButton sortByNameDesc = new RadioButton(requireActivity());
+        sortByNameDesc.setText("zZ - aA (Name Descending)");
+        sortByNameDesc.setId(View.generateViewId());
+
+        RadioButton sortByIDAsc = new RadioButton(requireActivity());
+        sortByIDAsc.setText("Oldest (ID Ascending)");
+        sortByIDAsc.setId(View.generateViewId());
+
+        RadioButton sortByIDDesc = new RadioButton(requireActivity());
+        sortByIDDesc.setText("Newest (ID Descending)");
+        sortByIDDesc.setId(View.generateViewId());
+
+        RadioButton sortByDefaultID = new RadioButton(requireActivity());
+        sortByDefaultID.setText("Default (dari id)");
+        sortByDefaultID.setId(View.generateViewId());
+
+        radioGroup.addView(sortByName);
+        radioGroup.addView(sortByNameDesc);
+        radioGroup.addView(sortByIDAsc);
+        radioGroup.addView(sortByIDDesc);
+        radioGroup.addView(sortByDefaultID);
+        container.addView(radioGroup);
 
         int storedValue = preference.a("sortBy", ProjectComparator.DEFAULT);
         if ((storedValue & ProjectComparator.SORT_BY_NAME) == ProjectComparator.SORT_BY_NAME) {
-            sortByName.setChecked(true);
+            if ((storedValue & ProjectComparator.SORT_ORDER_ASCENDING) == ProjectComparator.SORT_ORDER_ASCENDING) {
+                sortByName.setChecked(true);
+            } else {
+                sortByNameDesc.setChecked(true);
+            }
         } else if ((storedValue & ProjectComparator.SORT_BY_ID) == ProjectComparator.SORT_BY_ID) {
-            sortByID.setChecked(true);
-        }
-        if ((storedValue & ProjectComparator.SORT_ORDER_ASCENDING) == ProjectComparator.SORT_ORDER_ASCENDING) {
-            sortOrderAsc.setChecked(true);
-        } else if ((storedValue & ProjectComparator.SORT_ORDER_DESCENDING) == ProjectComparator.SORT_ORDER_DESCENDING) {
-            sortOrderDesc.setChecked(true);
+            if ((storedValue & ProjectComparator.SORT_ORDER_ASCENDING) == ProjectComparator.SORT_ORDER_ASCENDING) {
+                sortByIDAsc.setChecked(true);
+            } else {
+                sortByIDDesc.setChecked(true);
+            }
+        } else {
+            sortByDefaultID.setChecked(true);
         }
 
-        dialog.setView(dialogBinding.getRoot());
+        dialog.setView(container);
         dialog.setPositiveButton("Save", (v, which) -> {
             int sortValue = 0;
-            if (sortByName.isChecked()) {
-                sortValue |= ProjectComparator.SORT_BY_NAME;
-            }
-            if (sortByID.isChecked()) {
-                sortValue |= ProjectComparator.SORT_BY_ID;
-            }
-            if (sortOrderAsc.isChecked()) {
-                sortValue |= ProjectComparator.SORT_ORDER_ASCENDING;
-            }
-            if (sortOrderDesc.isChecked()) {
-                sortValue |= ProjectComparator.SORT_ORDER_DESCENDING;
+            int checkedId = radioGroup.getCheckedRadioButtonId();
+            if (checkedId == sortByName.getId()) {
+                sortValue = ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_ASCENDING;
+            } else if (checkedId == sortByNameDesc.getId()) {
+                sortValue = ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_DESCENDING;
+            } else if (checkedId == sortByIDAsc.getId()) {
+                sortValue = ProjectComparator.SORT_BY_ID | ProjectComparator.SORT_ORDER_ASCENDING;
+            } else if (checkedId == sortByIDDesc.getId()) {
+                sortValue = ProjectComparator.SORT_BY_ID | ProjectComparator.SORT_ORDER_DESCENDING;
+            } else {
+                sortValue = ProjectComparator.DEFAULT;
             }
             preference.a("sortBy", sortValue, true);
-            v.dismiss();
             refreshProjectsList();
         });
         dialog.setNegativeButton("Cancel", null);

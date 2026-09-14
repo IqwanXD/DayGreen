@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -12,6 +13,7 @@
         android:clipChildren="false"
         android:clipToPadding="false">
 
+        <!-- AppBarLayout (Toolbar) -->
         <com.google.android.material.appbar.AppBarLayout
             android:id="@+id/appbar"
             android:layout_width="match_parent"
@@ -30,31 +32,41 @@
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="8dp"
                 app:cardBackgroundColor="?colorSurfaceContainer"
-                app:cardCornerRadius="50dp">
+                app:cardCornerRadius="32dp">
 
                 <com.google.android.material.appbar.MaterialToolbar
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="4dp"
+                    app:navigationIcon="@drawable/ic_mtrl_menu"
                     tools:menu="@menu/projects_fragment_menu">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/search_edit_text"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Search for projects..."
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:hint="Search for projects..."
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant"
+                        android:inputType="text"
+                        android:imeOptions="actionSearch"
+                        android:focusable="true"
+                        android:focusableInTouchMode="true"
+                        android:background="@android:color/transparent"
+                        app:boxBackgroundMode="none" />
                 </com.google.android.material.appbar.MaterialToolbar>
             </com.google.android.material.card.MaterialCardView>
         </com.google.android.material.appbar.AppBarLayout>
 
+        <!-- Fragment Container -->
         <androidx.fragment.app.FragmentContainerView
             android:id="@+id/container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
-        <!-- Overlay transparan untuk menangkap klik di luar FAB -->
+        <!-- Overlay untuk tutup FAB saat klik luar -->
         <View
             android:id="@+id/fab_overlay"
             android:layout_width="match_parent"
@@ -64,12 +76,12 @@
             android:focusable="true"
             android:visibility="gone" />
 
+        <!-- Bottom Navigation -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:orientation="vertical">
 
             <com.google.android.material.divider.MaterialDivider
                 android:layout_width="match_parent"
@@ -82,26 +94,25 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom"
                 app:menu="@menu/main_menu" />
-
         </LinearLayout>
 
-        <!-- Speed Dial FAB Container dengan Padding agar elevation tidak terpotong -->
+        <!-- FAB Container dengan Margin Bottom dari Navbar + Hide on Scroll -->
         <LinearLayout
             android:id="@+id/fab_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:paddingEnd="16dp"
-            android:paddingBottom="24dp"
+            android:paddingBottom="88dp"
             android:paddingStart="16dp"
             android:paddingTop="16dp"
             android:gravity="end"
             android:orientation="vertical"
             android:clipChildren="false"
             android:clipToPadding="false"
-            app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior">
+            app:layout_behavior="com.google.android.material.behavior.HideBottomViewOnScrollBehavior">
 
-            <!-- Sub FAB 1: Restore Project -->
+            <!-- Sub FAB: Restore Project -->
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/restore_project"
                 android:layout_width="wrap_content"
@@ -111,9 +122,10 @@
                 android:visibility="invisible"
                 android:alpha="0"
                 app:icon="@drawable/ic_mtrl_history"
+                app:cornerRadius="32dp"
                 tools:ignore="ContentDescription" />
 
-            <!-- Sub FAB 2: Create New Project -->
+            <!-- Sub FAB: Create New Project -->
             <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
                 android:id="@+id/create_new_project"
                 android:layout_width="wrap_content"
@@ -123,6 +135,7 @@
                 android:visibility="invisible"
                 android:alpha="0"
                 app:icon="@drawable/ic_mtrl_add"
+                app:cornerRadius="32dp"
                 tools:ignore="ContentDescription" />
 
             <!-- Main FAB -->
@@ -132,16 +145,15 @@
                 android:layout_height="wrap_content"
                 app:icon="@drawable/ic_mtrl_folder"
                 app:srcCompat="@drawable/ic_mtrl_folder"
+                app:shapeAppearanceOverlay="?attr/shapeAppearanceLargeComponent"
                 tools:ignore="ContentDescription" />
-
         </LinearLayout>
-
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
+    <!-- Drawer -->
     <com.besome.sketch.MainDrawer
         android:id="@+id/left_drawer"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_gravity="start" />
-
 </androidx.drawerlayout.widget.DrawerLayout>

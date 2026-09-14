@@ -15,6 +15,8 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -27,13 +29,13 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
+import com.google.android.material.behavior.HideBottomViewOnScrollBehavior;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.FirebaseApp;
 import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +50,6 @@ import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.activities.tools.ConfigActivity;
-import mod.jbk.util.LogUtil;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
 import pro.sketchware.activities.about.AboutActivity;
@@ -232,13 +233,29 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             backupRestoreManager.restore();
         });
 
-        // Menutup FAB menu ketika mengklik area luar
+        // Menutup FAB menu dan unfokus search ketika mengklik area luar
         binding.layoutCoordinator.setOnTouchListener((v, event) -> {
-            if (isFabMenuOpen && event.getAction() == MotionEvent.ACTION_DOWN) {
-                closeFabMenu();
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (isFabMenuOpen) {
+                    closeFabMenu();
+                }
+                clearSearchFocusAndHideKeyboard();
             }
             return false;
         });
+
+        // Deteksi scroll untuk menutup FAB menu
+        RecyclerView recyclerView = findViewById(R.id.myprojects);
+        if (recyclerView != null) {
+            recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+                @Override
+                public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                    if ((Math.abs(dx) > 0 || Math.abs(dy) > 0) && isFabMenuOpen) {
+                        closeFabMenu();
+                    }
+                }
+            });
+        }
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -319,6 +336,17 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         DRSetup.startNow(this);
     }
 
+    public void clearSearchFocusAndHideKeyboard() {
+        EditText searchEditText = findViewById(R.id.search_edit_text);
+        if (searchEditText != null && searchEditText.hasFocus()) {
+            searchEditText.clearFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(searchEditText.getWindowToken(), 0);
+            }
+        }
+    }
+
     private void toggleFabMenu() {
         if (!isFabMenuOpen) {
             showFabMenu();
@@ -329,6 +357,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
     private void showFabMenu() {
         isFabMenuOpen = true;
+        if (binding.fabOverlay != null) {
+            binding.fabOverlay.setVisibility(View.VISIBLE);
+        }
 
         binding.createNewProject.setVisibility(View.VISIBLE);
         binding.restoreProject.setVisibility(View.VISIBLE);
@@ -348,6 +379,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
     private void closeFabMenu() {
         isFabMenuOpen = false;
+        if (binding.fabOverlay != null) {
+            binding.fabOverlay.setVisibility(View.GONE);
+        }
 
         binding.createNewProject.animate()
                 .translationY(16f)
