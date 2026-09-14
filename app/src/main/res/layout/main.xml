@@ -34,7 +34,7 @@
                 app:cardBackgroundColor="?colorSurfaceContainer"
                 app:cardCornerRadius="32dp">
                 
-<com.google.android.material.appbar.MaterialToolbar
+                <com.google.android.material.appbar.MaterialToolbar
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -66,6 +66,7 @@
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <!-- Overlay untuk tutup FAB saat klik luar -->
+        <!-- Pastikan ini berada di atas Fragment tapi di bawah FAB -->
         <View
             android:id="@+id/fab_overlay"
             android:layout_width="match_parent"
@@ -75,36 +76,14 @@
             android:focusable="true"
             android:visibility="gone" />
 
-        <!-- Bottom Navigation -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:orientation="vertical">
-
-            <com.google.android.material.divider.MaterialDivider
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:dividerColor="?attr/colorSurfaceContainerHighest" />
-
-            <com.google.android.material.bottomnavigation.BottomNavigationView
-                android:id="@+id/bottom_nav"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                app:menu="@menu/main_menu" />
-        </LinearLayout>
-
-        <!-- FAB Container dengan Margin Bottom dari Navbar + Hide on Scroll -->
+        <!-- FAB Container dengan layout_margin (bukan padding) agar tidak memblokir overlay -->
         <LinearLayout
             android:id="@+id/fab_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
-            android:paddingEnd="16dp"
-            android:paddingBottom="88dp"
-            android:paddingStart="16dp"
-            android:paddingTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
             android:gravity="end"
             android:orientation="vertical"
             android:clipChildren="false"
