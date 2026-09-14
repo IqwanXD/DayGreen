@@ -31,7 +31,9 @@ import androidx.fragment.app.FragmentTransaction;
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.FirebaseAnalytics;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.analytics.FirebaseAnalytics;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +48,7 @@ import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.activities.tools.ConfigActivity;
+import mod.jbk.util.LogUtil;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
 import pro.sketchware.activities.about.AboutActivity;
@@ -211,41 +214,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         });
 
-        // Touch Listener untuk unfocus EditText dan melepaskan keyboard saat klik di luar
-        binding.layoutCoordinator.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                if (binding.etSearchProjects.hasFocus()) {
-                    binding.etSearchProjects.clearFocus();
-                    UI.hideKeyboard(this);
-                }
-                if (isFabMenuOpen) {
-                    closeFabMenu();
-                }
-            }
-            return false;
-        });
-
-        // Animasi menyembunyikan icon search di toolbar saat EditText mendapatkan fokus
-        binding.etSearchProjects.setOnFocusChangeListener((v, hasFocus) -> {
-            View searchMenuItem = binding.toolbar.findViewById(R.id.searchProjects);
-            if (searchMenuItem != null) {
-                if (hasFocus) {
-                    searchMenuItem.animate()
-                            .alpha(0.0f)
-                            .setDuration(150)
-                            .withEndAction(() -> searchMenuItem.setVisibility(View.GONE))
-                            .start();
-                } else {
-                    searchMenuItem.setVisibility(View.VISIBLE);
-                    searchMenuItem.animate()
-                            .alpha(1.0f)
-                            .setDuration(150)
-                            .start();
-                }
-            }
-        });
-
-        // Setup FAB & Sub-FAB Listener
+        // Setup Listener FAB & Sub-FAB
         binding.fabMain.setOnClickListener(v -> toggleFabMenu());
 
         binding.createNewProject.setOnClickListener(v -> {
@@ -263,8 +232,13 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             backupRestoreManager.restore();
         });
 
-        // Klik di area overlay untuk menutup FAB menu
-        binding.fabOverlay.setOnClickListener(v -> closeFabMenu());
+        // Menutup FAB menu ketika mengklik area luar
+        binding.layoutCoordinator.setOnTouchListener((v, event) -> {
+            if (isFabMenuOpen && event.getAction() == MotionEvent.ACTION_DOWN) {
+                closeFabMenu();
+            }
+            return false;
+        });
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -356,7 +330,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private void showFabMenu() {
         isFabMenuOpen = true;
 
-        binding.fabOverlay.setVisibility(View.VISIBLE);
         binding.createNewProject.setVisibility(View.VISIBLE);
         binding.restoreProject.setVisibility(View.VISIBLE);
 
@@ -373,11 +346,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 .start();
     }
 
-    public void closeFabMenu() {
-        if (!isFabMenuOpen) return;
+    private void closeFabMenu() {
         isFabMenuOpen = false;
-
-        binding.fabOverlay.setVisibility(View.GONE);
 
         binding.createNewProject.animate()
                 .translationY(16f)

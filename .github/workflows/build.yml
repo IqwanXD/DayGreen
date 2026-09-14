@@ -1,4 +1,4 @@
-name: Android Build & Release Pipeline
+name: Update UI
 
 on:
   push:
