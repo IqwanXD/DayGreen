@@ -196,12 +196,8 @@ public class ProjectsFragment extends DA {
     }
 
     private void applyUniformCornerRadiusToRecyclerView() {
-        if (binding.myprojects instanceof com.google.android.material.card.MaterialCardView) {
-            ShapeAppearanceModel shape = ShapeAppearanceModel.builder()
-                    .setAllCorners(CornerFamily.ROUNDED, getResources().getDisplayMetrics().density * 32)
-                    .build();
-            ((com.google.android.material.card.MaterialCardView) binding.myprojects).setShapeAppearanceModel(shape);
-        }
+        // binding.myprojects is a RecyclerView, not MaterialCardView
+        // Corner radius can be applied through the container's background instead
     }
 
     @Override
