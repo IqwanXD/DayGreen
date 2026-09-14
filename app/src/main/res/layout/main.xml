@@ -3,7 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
     <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:id="@+id/layout_coordinator"
@@ -39,11 +41,19 @@
                     android:layout_marginHorizontal="4dp"
                     tools:menu="@menu/projects_fragment_menu">
 
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <!-- EditText Transparan Tanpa Underline -->
+                    <EditText
+                        android:id="@+id/et_search_projects"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Search for projects..."
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:background="@null"
+                        android:hint="Search for projects..."
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textColorHint="?attr/colorOnSurfaceVariant"
+                        android:textSize="16sp" />
                 </com.google.android.material.appbar.MaterialToolbar>
             </com.google.android.material.card.MaterialCardView>
         </com.google.android.material.appbar.AppBarLayout>
@@ -85,20 +95,20 @@
 
         </LinearLayout>
 
-        <!-- Speed Dial FAB Container dengan Padding agar elevation tidak terpotong -->
+        <!-- Speed Dial FAB Container -->
         <LinearLayout
             android:id="@+id/fab_container"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
-            android:paddingEnd="16dp"
-            android:paddingBottom="24dp"
-            android:paddingStart="16dp"
-            android:paddingTop="16dp"
-            android:gravity="end"
-            android:orientation="vertical"
             android:clipChildren="false"
             android:clipToPadding="false"
+            android:gravity="end"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingTop="16dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="24dp"
             app:layout_behavior="com.google.android.material.behavior.HideViewOnScrollBehavior">
 
             <!-- Sub FAB 1: Restore Project -->
@@ -107,9 +117,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
+                android:alpha="0"
                 android:text="Restore"
                 android:visibility="invisible"
-                android:alpha="0"
                 app:icon="@drawable/ic_mtrl_history"
                 tools:ignore="ContentDescription" />
 
@@ -119,9 +129,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
+                android:alpha="0"
                 android:text="Create"
                 android:visibility="invisible"
-                android:alpha="0"
                 app:icon="@drawable/ic_mtrl_add"
                 tools:ignore="ContentDescription" />
 

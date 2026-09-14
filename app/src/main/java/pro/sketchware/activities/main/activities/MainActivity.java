@@ -13,6 +13,7 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
@@ -210,7 +211,41 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         });
 
-        // Setup FAB & Sub-FAB
+        // Touch Listener untuk unfocus EditText dan melepaskan keyboard saat klik di luar
+        binding.layoutCoordinator.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (binding.etSearchProjects.hasFocus()) {
+                    binding.etSearchProjects.clearFocus();
+                    UI.hideKeyboard(this);
+                }
+                if (isFabMenuOpen) {
+                    closeFabMenu();
+                }
+            }
+            return false;
+        });
+
+        // Animasi menyembunyikan icon search di toolbar saat EditText mendapatkan fokus
+        binding.etSearchProjects.setOnFocusChangeListener((v, hasFocus) -> {
+            View searchMenuItem = binding.toolbar.findViewById(R.id.searchProjects);
+            if (searchMenuItem != null) {
+                if (hasFocus) {
+                    searchMenuItem.animate()
+                            .alpha(0.0f)
+                            .setDuration(150)
+                            .withEndAction(() -> searchMenuItem.setVisibility(View.GONE))
+                            .start();
+                } else {
+                    searchMenuItem.setVisibility(View.VISIBLE);
+                    searchMenuItem.animate()
+                            .alpha(1.0f)
+                            .setDuration(150)
+                            .start();
+                }
+            }
+        });
+
+        // Setup FAB & Sub-FAB Listener
         binding.fabMain.setOnClickListener(v -> toggleFabMenu());
 
         binding.createNewProject.setOnClickListener(v -> {
@@ -228,7 +263,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             backupRestoreManager.restore();
         });
 
-        // Klik di area overlay di luar FAB untuk menutup menu FAB
+        // Klik di area overlay untuk menutup FAB menu
         binding.fabOverlay.setOnClickListener(v -> closeFabMenu());
 
         boolean hasStorageAccess = isStoragePermissionGranted();

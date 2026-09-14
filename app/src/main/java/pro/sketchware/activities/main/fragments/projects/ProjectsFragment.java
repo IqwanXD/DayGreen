@@ -6,12 +6,15 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -147,12 +150,42 @@ public class ProjectsFragment extends DA {
         binding.myprojects.setAdapter(projectsAdapter);
         binding.myprojects.setHasFixedSize(true);
 
-        // Auto close FAB menu saat RecyclerView di-scroll
+        // Setup EditText Search dari MainActivity Toolbar
+        EditText etSearch = requireActivity().findViewById(R.id.et_search_projects);
+        if (etSearch != null) {
+            etSearch.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (projectsAdapter != null) {
+                        projectsAdapter.filterData(s.toString());
+                    }
+                    if (s.length() == 0) {
+                        binding.specialActionContainer.setVisibility(View.VISIBLE);
+                        binding.titleContainer.setVisibility(View.VISIBLE);
+                    } else {
+                        binding.specialActionContainer.setVisibility(View.GONE);
+                        binding.titleContainer.setVisibility(View.GONE);
+                    }
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
+
+        // OnScrollListener RecyclerView: Unfocus EditText & Close FAB saat scroll
         binding.myprojects.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
                 if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    if (etSearch != null && etSearch.hasFocus()) {
+                        etSearch.clearFocus();
+                        UI.hideKeyboard(requireActivity());
+                    }
                     if (getActivity() instanceof MainActivity) {
                         ((MainActivity) getActivity()).closeFabMenu();
                     }
@@ -176,13 +209,11 @@ public class ProjectsFragment extends DA {
                 menuInflater.inflate(R.menu.projects_fragment_menu, menu);
                 projectsSearchView = (SearchView) menu.findItem(R.id.searchProjects).getActionView();
                 if (projectsSearchView != null) {
-                    // Hilangkan underline (garis bawah) pada SearchView
                     View searchPlate = projectsSearchView.findViewById(androidx.appcompat.R.id.search_plate);
                     if (searchPlate != null) {
                         searchPlate.setBackgroundColor(Color.TRANSPARENT);
                     }
 
-                    // Hilangkan ikon pencarian internalSearchView saat fokus
                     ImageView searchMagIcon = projectsSearchView.findViewById(androidx.appcompat.R.id.search_mag_icon);
                     if (searchMagIcon != null) {
                         searchMagIcon.setImageDrawable(null);
@@ -242,7 +273,6 @@ public class ProjectsFragment extends DA {
             return;
         }
 
-        // Tampilkan LoadingIndicator kustom saat refresh
         if (binding.loadingContainer.getVisibility() != View.VISIBLE) {
             binding.loadingContainer.setVisibility(View.VISIBLE);
         }
@@ -258,7 +288,6 @@ public class ProjectsFragment extends DA {
                     binding.swipeRefresh.setRefreshing(false);
                 }
                 
-                // Sembunyikan LoadingIndicator setelah data selesai dimuat
                 binding.loadingContainer.setVisibility(View.GONE);
                 binding.myprojects.setVisibility(View.VISIBLE);
 
