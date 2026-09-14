@@ -303,18 +303,6 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         }
 
-        binding.bottomNav.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.item_projects) {
-                navigateToProjectsFragment();
-                return true;
-            } else if (id == R.id.item_sketchub) {
-                navigateToSketchubFragment();
-                return true;
-            }
-            return false;
-        });
-
         if (savedInstanceState != null) {
             projectsFragment = (ProjectsFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_FRAGMENT_TAG);
             projectsStoreFragment = (ProjectsStoreFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_STORE_FRAGMENT_TAG);

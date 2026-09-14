@@ -23,7 +23,7 @@ jobs:
         run: |
           FILE="app/build.gradle"
           [ -f "app/build.gradle.kts" ] && FILE="app/build.gradle.kts"
-          
+
           CURRENT=$(grep -m1 'versionCode' "$FILE" | grep -oE '[0-9]+')
           if [ -z "$CURRENT" ]; then
             echo "Error: versionCode tidak ditemukan!"
@@ -78,39 +78,23 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ================= BUILD ALL APKs =================
-      - name: Build Debug and Release APKs
+      # ================= BUILD UNIVERSAL APKs =================
+      - name: Build Universal Debug and Release APKs
         run: ./gradlew assembleDebug assembleRelease --stacktrace
 
-      # ================= UPLOAD ARTIFACTS =================
-      - name: Upload SDK26 Debug APK Artifact
+      # ================= UPLOAD UNIVERSAL ARTIFACTS =================
+      - name: Upload Universal Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-sdk26-debug
-          path: app/build/outputs/apk/android26/debug/*.apk
+          name: app-universal-debug
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Upload SDK33 Debug APK Artifact
+      - name: Upload Universal Release APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-sdk33-debug
-          path: app/build/outputs/apk/android33/debug/*.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload SDK26 Release APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-sdk26-release
-          path: app/build/outputs/apk/android26/release/*.apk
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload SDK33 Release APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-sdk33-release
-          path: app/build/outputs/apk/android33/release/*.apk
+          name: app-universal-release
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 30
