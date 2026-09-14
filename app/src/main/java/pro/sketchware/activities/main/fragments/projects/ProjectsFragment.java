@@ -13,7 +13,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
+import android.widget.RadioGroup;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -21,14 +23,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.core.view.MenuProvider;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.besome.sketch.adapters.ProjectsAdapter;
 import com.besome.sketch.design.DesignActivity;
 import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
-import com.google.android.material.color.MaterialColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.transition.MaterialFadeThrough;
 
@@ -42,13 +43,11 @@ import java.util.stream.IntStream;
 import a.a.a.DA;
 import a.a.a.DB;
 import a.a.a.lC;
-import dev.chrisbanes.insetter.Insetter;
 import extensions.anbui.daydream.project.RestoreProject;
 import mod.hey.studios.project.ProjectTracker;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
 import pro.sketchware.databinding.MyprojectsBinding;
-import pro.sketchware.databinding.SortProjectDialogBinding;
 import pro.sketchware.utility.UI;
 
 public class ProjectsFragment extends DA {
@@ -139,12 +138,27 @@ public class ProjectsFragment extends DA {
         preference = new DB(requireContext(), "project");
 
         binding.swipeRefresh.setOnRefreshListener(this::refreshProjectsList);
-        binding.swipeRefresh.setColorSchemeColors(MaterialColors.getColor(requireContext(), R.attr.colorPrimary, 0));
-        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(MaterialColors.getColor(requireContext(), R.attr.colorSurfaceContainer, 0));
+
+        // Menyembunyikan spinner default SwipeRefreshLayout agar LoadingIndicator yang tampil
+        binding.swipeRefresh.setColorSchemeColors(Color.TRANSPARENT);
+        binding.swipeRefresh.setProgressBackgroundColorSchemeColor(Color.TRANSPARENT);
 
         projectsAdapter = new ProjectsAdapter(this, projectsList);
         binding.myprojects.setAdapter(projectsAdapter);
         binding.myprojects.setHasFixedSize(true);
+
+        // Auto close FAB menu saat RecyclerView di-scroll
+        binding.myprojects.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    if (getActivity() instanceof MainActivity) {
+                        ((MainActivity) getActivity()).closeFabMenu();
+                    }
+                }
+            }
+        });
 
         binding.myprojects.post(this::refreshProjectsList);
         UI.addSystemWindowInsetToPadding(binding.specialActionContainer, true, false, true, false);
@@ -228,6 +242,11 @@ public class ProjectsFragment extends DA {
             return;
         }
 
+        // Tampilkan LoadingIndicator kustom saat refresh
+        if (binding.loadingContainer.getVisibility() != View.VISIBLE) {
+            binding.loadingContainer.setVisibility(View.VISIBLE);
+        }
+
         executorService.execute(() -> {
             List<HashMap<String, Object>> loadedProjects = lC.a();
             loadedProjects.sort(new ProjectComparator(preference.d("sortBy"), preference.a("pinnedProject", "-1")));
@@ -235,11 +254,14 @@ public class ProjectsFragment extends DA {
             DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new ProjectDiffCallback(projectsList, loadedProjects));
 
             requireActivity().runOnUiThread(() -> {
-                if (binding.swipeRefresh.isRefreshing()) binding.swipeRefresh.setRefreshing(false);
-                if (binding.loadingContainer.getVisibility() == View.VISIBLE) {
-                    binding.loadingContainer.setVisibility(View.GONE);
-                    binding.myprojects.setVisibility(View.VISIBLE);
+                if (binding.swipeRefresh.isRefreshing()) {
+                    binding.swipeRefresh.setRefreshing(false);
                 }
+                
+                // Sembunyikan LoadingIndicator setelah data selesai dimuat
+                binding.loadingContainer.setVisibility(View.GONE);
+                binding.myprojects.setVisibility(View.VISIBLE);
+
                 projectsList.clear();
                 projectsList.addAll(loadedProjects);
                 diffResult.dispatchUpdatesTo(projectsAdapter);
@@ -279,39 +301,66 @@ public class ProjectsFragment extends DA {
         MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(requireActivity());
         dialog.setTitle("Sort options");
 
-        SortProjectDialogBinding dialogBinding = SortProjectDialogBinding.inflate(LayoutInflater.from(requireActivity()));
-        RadioButton sortByName = dialogBinding.sortByName;
-        RadioButton sortByID = dialogBinding.sortByID;
-        RadioButton sortOrderAsc = dialogBinding.sortOrderAsc;
-        RadioButton sortOrderDesc = dialogBinding.sortOrderDesc;
+        LinearLayout layout = new LinearLayout(requireActivity());
+        layout.setOrientation(LinearLayout.VERTICAL);
+        int padding = (int) (16 * requireContext().getResources().getDisplayMetrics().density);
+        layout.setPadding(padding, padding, padding, padding);
+
+        RadioGroup radioGroup = new RadioGroup(requireActivity());
+        radioGroup.setOrientation(RadioGroup.VERTICAL);
+
+        RadioButton sortOldest = new RadioButton(requireActivity());
+        sortOldest.setText("Oldest");
+
+        RadioButton sortNewest = new RadioButton(requireActivity());
+        sortNewest.setText("Newest");
+
+        RadioButton sortAscName = new RadioButton(requireActivity());
+        sortAscName.setText("aA - zZ");
+
+        RadioButton sortDescName = new RadioButton(requireActivity());
+        sortDescName.setText("zZ - aZ");
+
+        RadioButton sortDefault = new RadioButton(requireActivity());
+        sortDefault.setText("Default (by ID)");
+
+        radioGroup.addView(sortOldest);
+        radioGroup.addView(sortNewest);
+        radioGroup.addView(sortAscName);
+        radioGroup.addView(sortDescName);
+        radioGroup.addView(sortDefault);
+
+        layout.addView(radioGroup);
 
         int storedValue = preference.a("sortBy", ProjectComparator.DEFAULT);
-        if ((storedValue & ProjectComparator.SORT_BY_NAME) == ProjectComparator.SORT_BY_NAME) {
-            sortByName.setChecked(true);
-        } else if ((storedValue & ProjectComparator.SORT_BY_ID) == ProjectComparator.SORT_BY_ID) {
-            sortByID.setChecked(true);
-        }
-        if ((storedValue & ProjectComparator.SORT_ORDER_ASCENDING) == ProjectComparator.SORT_ORDER_ASCENDING) {
-            sortOrderAsc.setChecked(true);
-        } else if ((storedValue & ProjectComparator.SORT_ORDER_DESCENDING) == ProjectComparator.SORT_ORDER_DESCENDING) {
-            sortOrderDesc.setChecked(true);
+        if (storedValue == (ProjectComparator.SORT_BY_ID | ProjectComparator.SORT_ORDER_ASCENDING)) {
+            sortOldest.setChecked(true);
+        } else if (storedValue == (ProjectComparator.SORT_BY_ID | ProjectComparator.SORT_ORDER_DESCENDING)) {
+            sortNewest.setChecked(true);
+        } else if (storedValue == (ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_ASCENDING)) {
+            sortAscName.setChecked(true);
+        } else if (storedValue == (ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_DESCENDING)) {
+            sortDescName.setChecked(true);
+        } else {
+            sortDefault.setChecked(true);
         }
 
-        dialog.setView(dialogBinding.getRoot());
+        dialog.setView(layout);
         dialog.setPositiveButton("Save", (v, which) -> {
-            int sortValue = 0;
-            if (sortByName.isChecked()) {
-                sortValue |= ProjectComparator.SORT_BY_NAME;
+            int sortValue = ProjectComparator.DEFAULT;
+
+            if (sortOldest.isChecked()) {
+                sortValue = ProjectComparator.SORT_BY_ID | ProjectComparator.SORT_ORDER_ASCENDING;
+            } else if (sortNewest.isChecked()) {
+                sortValue = ProjectComparator.SORT_BY_ID | ProjectComparator.SORT_ORDER_DESCENDING;
+            } else if (sortAscName.isChecked()) {
+                sortValue = ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_ASCENDING;
+            } else if (sortDescName.isChecked()) {
+                sortValue = ProjectComparator.SORT_BY_NAME | ProjectComparator.SORT_ORDER_DESCENDING;
+            } else if (sortDefault.isChecked()) {
+                sortValue = ProjectComparator.DEFAULT;
             }
-            if (sortByID.isChecked()) {
-                sortValue |= ProjectComparator.SORT_BY_ID;
-            }
-            if (sortOrderAsc.isChecked()) {
-                sortValue |= ProjectComparator.SORT_ORDER_ASCENDING;
-            }
-            if (sortOrderDesc.isChecked()) {
-                sortValue |= ProjectComparator.SORT_ORDER_DESCENDING;
-            }
+
             preference.a("sortBy", sortValue, true);
             v.dismiss();
             refreshProjectsList();

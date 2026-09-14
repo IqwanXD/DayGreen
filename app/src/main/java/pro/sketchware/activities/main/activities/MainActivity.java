@@ -13,7 +13,6 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
 
@@ -31,9 +30,7 @@ import androidx.fragment.app.FragmentTransaction;
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.FirebaseAnalytics;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,7 +45,6 @@ import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
 import mod.hilal.saif.activities.tools.ConfigActivity;
-import mod.jbk.util.LogUtil;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
 import pro.sketchware.activities.about.AboutActivity;
@@ -214,7 +210,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         });
 
-        // Setup Listener FAB & Sub-FAB
+        // Setup FAB & Sub-FAB
         binding.fabMain.setOnClickListener(v -> toggleFabMenu());
 
         binding.createNewProject.setOnClickListener(v -> {
@@ -232,13 +228,8 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             backupRestoreManager.restore();
         });
 
-        // Menutup FAB menu ketika mengklik area luar
-        binding.layoutCoordinator.setOnTouchListener((v, event) -> {
-            if (isFabMenuOpen && event.getAction() == MotionEvent.ACTION_DOWN) {
-                closeFabMenu();
-            }
-            return false;
-        });
+        // Klik di area overlay di luar FAB untuk menutup menu FAB
+        binding.fabOverlay.setOnClickListener(v -> closeFabMenu());
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -330,6 +321,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private void showFabMenu() {
         isFabMenuOpen = true;
 
+        binding.fabOverlay.setVisibility(View.VISIBLE);
         binding.createNewProject.setVisibility(View.VISIBLE);
         binding.restoreProject.setVisibility(View.VISIBLE);
 
@@ -346,8 +338,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
                 .start();
     }
 
-    private void closeFabMenu() {
+    public void closeFabMenu() {
+        if (!isFabMenuOpen) return;
         isFabMenuOpen = false;
+
+        binding.fabOverlay.setVisibility(View.GONE);
 
         binding.createNewProject.animate()
                 .translationY(16f)
