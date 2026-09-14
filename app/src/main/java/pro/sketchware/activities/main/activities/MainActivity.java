@@ -219,17 +219,17 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         binding.createNewProject.setOnClickListener(v -> {
             closeFabMenu();
-            // TODO: Tambahkan aksi create project di sini
-            Toast.makeText(this, "Create Project", Toast.LENGTH_SHORT).show();
+            if (projectsFragment != null) {
+                projectsFragment.toProjectSettingsActivity();
+            }
         });
 
         binding.restoreProject.setOnClickListener(v -> {
             closeFabMenu();
-            // TODO: Tambahkan aksi restore project di sini
-            if (backupRestoreManager != null && projectsFragment != null) {
-                // Contoh: backupRestoreManager.showRestoreDialog();
-                Toast.makeText(this, "Restore Project", Toast.LENGTH_SHORT).show();
+            if (backupRestoreManager == null) {
+                backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
             }
+            backupRestoreManager.restore();
         });
 
         // Menutup FAB menu ketika mengklik area luar
