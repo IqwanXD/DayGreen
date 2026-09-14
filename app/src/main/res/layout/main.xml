@@ -33,13 +33,12 @@
                 android:layout_marginTop="8dp"
                 app:cardBackgroundColor="?colorSurfaceContainer"
                 app:cardCornerRadius="32dp">
-
-                <com.google.android.material.appbar.MaterialToolbar
+                
+<com.google.android.material.appbar.MaterialToolbar
                     android:id="@+id/toolbar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="4dp"
-                    app:navigationIcon="@drawable/ic_mtrl_menu"
                     tools:menu="@menu/projects_fragment_menu">
 
                     <com.google.android.material.textfield.TextInputEditText
