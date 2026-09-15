@@ -88,7 +88,7 @@ object RemoveCore {
 
     @JvmStatic
     fun startRemove(projectID: String?, statusTextView: TextView?) {
-        if (projectID.isNull@cite: topic-NOrEmpty()) return
+        if (projectID.isNullOrEmpty()) return
 
         val basePath = FileUtils.getInternalStorageDir()
         val foldersToDelete = listOf(

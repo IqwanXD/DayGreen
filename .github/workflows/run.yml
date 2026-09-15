@@ -1,5 +1,5 @@
-name: Update UI
-
+name: InoInvation
+    
 on:
   push:
     branches: [ "main", "master" ]
