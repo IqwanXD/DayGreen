@@ -36,7 +36,7 @@
 						android:layout_width="36dp"
 						android:layout_height="36dp"
 						android:padding="5dp"
-						android:src="@drawable/icon_dehaze"
+						android:src="@drawable/ic_drawer"
 						android:scaleType="fitXY" />
 					<EditText
 						android:id="@+id/inputsearch"
@@ -55,7 +55,7 @@
 						android:id="@+id/clear_inputbtn"
 						android:layout_width="26dp"
 						android:layout_height="26dp"
-						android:src="@drawable/ic_clear"
+						android:src="@drawable/ic_mtrl_close"
 						android:scaleType="fitXY"
 						android:visibility="gone" />
 					<ImageView
@@ -63,7 +63,7 @@
 						android:layout_width="36dp"
 						android:layout_height="36dp"
 						android:padding="5dp"
-						android:src="@drawable/icon_search"
+						android:src="@drawable/ic_mtrl_search"
 						android:scaleType="fitXY" />
 				</LinearLayout>
 				<ru.iqwanoino.SwipeRefreshLayout
@@ -97,13 +97,14 @@
 					android:gravity="center_horizontal|center_vertical"
 					android:orientation="horizontal"
 					android:layout_gravity="right|center_vertical"
-					android:elevation="14dp">
+					android:elevation="14dp"
+					android:visibility="gone">
 					<ImageView
 						android:id="@+id/fabicon_restore"
 						android:layout_width="30dp"
 						android:layout_height="30dp"
 						android:padding="3dp"
-						android:src="@drawable/icon_history"
+						android:src="@drawable/ic_mtrl_history"
 						android:scaleType="fitXY" />
 					<TextView
 						android:id="@+id/fabtext_restore"
@@ -123,13 +124,14 @@
 					android:gravity="center_horizontal|center_vertical"
 					android:orientation="horizontal"
 					android:layout_gravity="right|center_vertical"
-					android:elevation="14dp">
+					android:elevation="14dp"
+					android:visibility="gone">
 					<ImageView
 						android:id="@+id/fabicon_create"
 						android:layout_width="30dp"
 						android:layout_height="30dp"
 						android:padding="3dp"
-						android:src="@drawable/icon_add"
+						android:src="@drawable/ic_mtrl_add"
 						android:scaleType="fitXY" />
 					<TextView
 						android:id="@+id/fabtext_create"
@@ -155,7 +157,7 @@
 						android:layout_width="30dp"
 						android:layout_height="30dp"
 						android:padding="3dp"
-						android:src="@drawable/icon_folder"
+						android:src="@drawable/ic_mtrl_folder"
 						android:scaleType="fitXY" />
 				</LinearLayout>
 			</LinearLayout>

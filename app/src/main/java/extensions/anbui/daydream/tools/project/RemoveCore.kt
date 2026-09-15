@@ -80,7 +80,7 @@ object RemoveCore {
                 }
 
                 if (activity is MainActivity) {
-                    activity.n()
+                    activity.refreshProjectsList()
                 }
             }
         }.start()
