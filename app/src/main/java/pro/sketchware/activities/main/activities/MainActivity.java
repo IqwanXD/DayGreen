@@ -98,6 +98,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final List<HashMap<String, Object>> projectsList = new ArrayList<>();
     private ProjectsAdapter projectsAdapter;
+    
+    public void n() {
+    // Implement sesuai kebutuhan
+    refreshProjectsList(); // atau action lain yang perlu
+    }
 
     // Launcher untuk membuka pengaturan proyek
     public final ActivityResultLauncher<Intent> openProjectSettings = registerForActivityResult(
@@ -143,7 +148,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         enableEdgeToEdgeNoContrast();
         
         // Gunakan layout XML kustom Anda (pastikan namanya sesuai, misal: activity_main)
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.main);
 
         u = new DB(getApplicationContext(), "U1");
         projectPreference = new DB(getApplicationContext(), "project");
