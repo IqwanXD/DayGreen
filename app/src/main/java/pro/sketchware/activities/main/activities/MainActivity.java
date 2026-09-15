@@ -42,6 +42,7 @@ import com.besome.sketch.editor.manage.library.ProjectComparator;
 import com.besome.sketch.projects.MyProjectSettingActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.snackbar.Snackbar;
+import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +68,6 @@ import mod.hilal.saif.activities.tools.ConfigActivity;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
 import pro.sketchware.activities.about.AboutActivity;
-import pro.sketchware.lib.base.BasePermissionAppCompatActivity;
 import pro.sketchware.lib.base.BottomSheetDialogView;
 import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;

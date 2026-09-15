@@ -49,11 +49,11 @@ public class SwipeRefreshLayout extends FrameLayout {
 	// Menyimpan drawable background untuk memudahkan penggantian warna
 	private GradientDrawable circleBg;
 	
-	public SimpleSwipeRefreshLayout(Context context) {
+	public SwipeRefreshLayout(Context context) {
 		this(context, null);
 	}
 	
-	public SimpleSwipeRefreshLayout(Context context, AttributeSet attrs) {
+	public SwipeRefreshLayout(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init(context);
 	}
@@ -132,7 +132,7 @@ public class SwipeRefreshLayout extends FrameLayout {
 	
 	/**
 * Mengubah ukuran ke tipe preset bawaan.
-* @param size Gunakan SimpleSwipeRefreshLayout.DEFAULT atau SimpleSwipeRefreshLayout.LARGE
+* @param size Gunakan SwipeRefreshLayout.DEFAULT atau SwipeRefreshLayout.LARGE
 */	
 	public void setSize(int size) {
 		if (size != DEFAULT && size != LARGE) {
