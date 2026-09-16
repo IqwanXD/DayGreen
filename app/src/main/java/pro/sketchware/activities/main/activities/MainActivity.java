@@ -73,9 +73,9 @@ import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.UI;
-import ru.iqwanoino.SwipeRefreshLayout; // Import SwipeRefreshLayout kustom Anda
+import ru.iqwanoino.SwipeRefreshLayout;
 
-public class MainActivity extends BasePermissionAppCompatActivity {
+public class MainActivity extends BasePermissionAppCompatActivity implements ProjectsAdapter.AdapterCallback {
 
     // Komponen UI dari XML Kustom Anda
     private DrawerLayout drawerLayout;
@@ -168,7 +168,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         
         handleIntentData();
 
-        // Backup Manager tidak lagi membutuhkan projectsFragment (gunakan 'null' atau sesuaikan konstruktor Anda)
+        // Backup Manager dengan MainActivity sebagai callback
         backupRestoreManager = new BackupRestoreManager(this, null); 
         Configs.mainActivity = this;
         DRSetup.startNow(this);
@@ -236,8 +236,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
     private void setupRecyclerView() {
         listProject.setLayoutManager(new LinearLayoutManager(this));
-        // Jika perlu adapter kustom Anda, gunakan konstruktor baru (karena fragment dihapus)
-        // Jika ProjectsAdapter butuh Activity (bukan Fragment), ganti 'this' (yang sebelumnya mengarah ke Fragment)
+        // Adapter sekarang menggunakan Activity (MainActivity) yang implements AdapterCallback
         projectsAdapter = new ProjectsAdapter(this, projectsList); 
         listProject.setAdapter(projectsAdapter);
         listProject.setHasFixedSize(true);
@@ -349,6 +348,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         });
     }
 
+    @Override
     public void toDesignActivity(String sc_id) {
         Intent intent = new Intent(this, DesignActivity.class);
         ProjectTracker.setScId(sc_id);
@@ -360,6 +360,11 @@ public class MainActivity extends BasePermissionAppCompatActivity {
     public void toProjectSettingsActivity() {
         Intent intent = new Intent(this, MyProjectSettingActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        openProjectSettings.launch(intent);
+    }
+
+    @Override
+    public void openProjectSettings(Intent intent) {
         openProjectSettings.launch(intent);
     }
 
