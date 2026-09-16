@@ -40,29 +40,23 @@ import mod.hey.studios.project.ProjectSettingsDialog;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
+import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
 import pro.sketchware.databinding.BottomSheetProjectOptionsBinding;
 import pro.sketchware.databinding.MyprojectsItemBinding;
 
 //DR
 public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.ProjectViewHolder> {
+    private final ProjectsFragment projectsFragment;
     private final Activity activity;
     private final DB preference;
-    private final AdapterCallback callback;
     private List<HashMap<String, Object>> shownProjects = new ArrayList<>();
     private List<HashMap<String, Object>> allProjects;
 
-    // Callback interface for fragment-dependent actions
-    public interface AdapterCallback {
-        void toDesignActivity(String scId);
-        void refreshProjectsList();
-        void openProjectSettings(Intent intent);
-    }
-
-    public ProjectsAdapter(Activity activity, List<HashMap<String, Object>> allProjects) {
-        this.activity = activity;
+    public ProjectsAdapter(ProjectsFragment projectsFragment, List<HashMap<String, Object>> allProjects) {
+        this.projectsFragment = projectsFragment;
+        activity = projectsFragment.requireActivity();
         this.allProjects = allProjects;
-        this.preference = new DB(activity, "project");
-        this.callback = (AdapterCallback) activity; // Cast activity to callback
+        preference = new DB(activity, "project");
     }
 
     public void setAllProjects(List<HashMap<String, Object>> projects) {
@@ -193,7 +187,7 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
 
         holder.binding.getRoot().setOnClickListener(v -> {
             if (!mB.a()) {
-                callback.toDesignActivity(scId);
+                projectsFragment.toDesignActivity(scId);
             }
         });
 
@@ -242,7 +236,7 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         intent.putExtra("sc_id", yB.c(project, "sc_id"));
         intent.putExtra("is_update", true);
         intent.putExtra("index", index);
-        callback.openProjectSettings(intent);
+        projectsFragment.openProjectSettings.launch(intent);
     }
 
     private void showProjectSettingDialog(HashMap<String, Object> project) {
@@ -268,7 +262,7 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         } else {
             preference.a("pinnedProject", yB.c(projectMap, "sc_id"), true);
         }
-        callback.refreshProjectsList();
+        projectsFragment.refreshProjectsList();
     }
 
     private boolean isPinned(HashMap<String, Object> projectMap) {
@@ -330,6 +324,17 @@ public class ProjectsAdapter extends RecyclerView.Adapter<ProjectsAdapter.Projec
         binding.projectDelete.setOnClickListener(v -> {
             RemoveCore.showDialogNow(activity, yB.c(projectMap, "sc_id"));
             projectOptionsBSD.dismiss();
+//            projectOptionsBSD.dismiss();
+//            MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(activity);
+//            dialog.setIcon(R.drawable.icon_delete);
+//            dialog.setTitle(Helper.getResString(R.string.delete_project_dialog_title));
+//            dialog.setMessage(Helper.getResString(R.string.delete_project_dialog_message).replace("%1$s", yB.c(projectMap, "my_app_name")));
+//            dialog.setPositiveButton(Helper.getResString(R.string.common_word_delete), (v1, which) -> {
+//                deleteProject(projectMap, position);
+//                v1.dismiss();
+//            });
+//            dialog.setNegativeButton(Helper.getResString(R.string.common_word_cancel), null);
+//            dialog.show();
         });
 
         if (isPinned(projectMap)) {

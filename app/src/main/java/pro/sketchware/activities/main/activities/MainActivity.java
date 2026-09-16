@@ -1,125 +1,72 @@
 package pro.sketchware.activities.main.activities;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Environment;
 import android.provider.Settings;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
-import android.view.MotionEvent;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.splashscreen.SplashScreen;
-import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 
-import com.besome.sketch.adapters.ProjectsAdapter;
-import com.besome.sketch.design.DesignActivity;
-import com.besome.sketch.editor.manage.library.ProjectComparator;
-import com.besome.sketch.projects.MyProjectSettingActivity;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.snackbar.Snackbar;
 import com.besome.sketch.lib.base.BasePermissionAppCompatActivity;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.color.MaterialColors;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.analytics.FirebaseAnalytics;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.IntStream;
 
 import a.a.a.DB;
 import a.a.a.GB;
-import a.a.a.lC;
 import extensions.anbui.daydream.configs.Configs;
-import extensions.anbui.daydream.file.FilesTools;
 import extensions.anbui.daydream.setup.DRSetup;
-import mod.hey.studios.project.ProjectTracker;
 import mod.hey.studios.project.backup.BackupFactory;
 import mod.hey.studios.project.backup.BackupRestoreManager;
 import mod.hey.studios.util.Helper;
-import mod.hilal.saif.activities.tools.ConfigActivity;
 import mod.tyron.backup.SingleCopyTask;
 import pro.sketchware.R;
-import pro.sketchware.activities.about.AboutActivity;
-import pro.sketchware.lib.base.BottomSheetDialogView;
+import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
+import pro.sketchware.databinding.MainBinding;
 import pro.sketchware.utility.DataResetter;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
 import pro.sketchware.utility.UI;
-import ru.iqwanoino.SwipeRefreshLayout;
 
-public class MainActivity extends BasePermissionAppCompatActivity implements ProjectsAdapter.AdapterCallback {
-
-    // Komponen UI dari XML Kustom Anda
-    private DrawerLayout drawerLayout;
-    private RecyclerView listProject;
-    private SwipeRefreshLayout swipeRefreshLayout;
-    private ImageView drawerToggleBtn, searchInputBtn, clearInputBtn;
-    private EditText inputSearch;
-    
-    private LinearLayout fabMenu, fabCreate, fabRestore;
-    private boolean isFabMenuOpen = false;
-    private boolean isSearchOpen = false;
-
-    // Logika Proyek
+public class MainActivity extends BasePermissionAppCompatActivity {
+    private static final String PROJECTS_FRAGMENT_TAG = "projects_fragment";
+    private ActionBarDrawerToggle drawerToggle;
     private DB u;
-    private DB projectPreference;
     private Snackbar storageAccessDenied;
-    private BackupRestoreManager backupRestoreManager;
-    public static boolean needRefreshProjectList = false;
-
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final List<HashMap<String, Object>> projectsList = new ArrayList<>();
-    private ProjectsAdapter projectsAdapter;
-    
-    public void n() {
-    // Implement sesuai kebutuhan
-    refreshProjectsList(); // atau action lain yang perlu
-    }
-
-    // Launcher untuk membuka pengaturan proyek
-    public final ActivityResultLauncher<Intent> openProjectSettings = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(), result -> {
-        if (result.getResultCode() == Activity.RESULT_OK) {
-            Intent data = result.getData();
-            if (data != null) {
-                String sc_id = data.getStringExtra("sc_id");
-                if (data.getBooleanExtra("is_new", false)) {
-                    toDesignActivity(sc_id);
-                    addProject(sc_id);
-                } else {
-                    updateProject(sc_id);
-                }
-            }
-        }
-    });
+    private MainBinding binding;
+    private boolean isFabMenuOpen = false;
 
     private final OnBackPressedCallback closeDrawer = new OnBackPressedCallback(true) {
         @Override
@@ -128,313 +75,25 @@ public class MainActivity extends BasePermissionAppCompatActivity implements Pro
                 closeFabMenu();
                 return;
             }
-            if (isSearchOpen) {
-                closeSearchBar();
-                return;
-            }
-            if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                drawerLayout.closeDrawer(GravityCompat.START);
-                return;
-            }
             setEnabled(false);
-            finish();
+            binding.drawerLayout.closeDrawers();
         }
     };
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        SplashScreen.installSplashScreen(this);
-        super.onCreate(savedInstanceState);
-        enableEdgeToEdgeNoContrast();
-        
-        // Gunakan layout XML kustom Anda (pastikan namanya sesuai, misal: activity_main)
-        setContentView(R.layout.main);
-
-        u = new DB(getApplicationContext(), "U1");
-        projectPreference = new DB(getApplicationContext(), "project");
-
-        initUI();
-        setupListeners();
-        setupRecyclerView();
-        setupSearchAndRefresh();
-
-        // Setup awal permission
-        boolean hasStorageAccess = isStoragePermissionGranted();
-        if (!hasStorageAccess) {
-            showNoticeNeedStorageAccess();
-        } else {
-            allFilesAccessCheck();
-        }
-        
-        handleIntentData();
-
-        // Backup Manager dengan MainActivity sebagai callback
-        backupRestoreManager = new BackupRestoreManager(this, null); 
-        Configs.mainActivity = this;
-        DRSetup.startNow(this);
-        
-        getOnBackPressedDispatcher().addCallback(this, closeDrawer);
-        
-        // Memuat daftar proyek
-        refreshProjectsList();
-    }
-
-    private void initUI() {
-        drawerLayout = findViewById(R.id.drawer_layout);
-        listProject = findViewById(R.id.list_project);
-        swipeRefreshLayout = findViewById(R.id.swiperefresh_layout);
-        
-        drawerToggleBtn = findViewById(R.id.drawer_togglebtn);
-        searchInputBtn = findViewById(R.id.search_inputbtn);
-        clearInputBtn = findViewById(R.id.clear_inputbtn);
-        inputSearch = findViewById(R.id.inputsearch);
-        
-        fabMenu = findViewById(R.id.fab_menu);
-        fabCreate = findViewById(R.id.fab_create);
-        fabRestore = findViewById(R.id.fab_restore);
-        
-        // Sesuaikan padding UI agar tidak tertutup System UI (Status Bar)
-        LinearLayout mainScreen = findViewById(R.id.mainscreen);
-        UI.addSystemWindowInsetToPadding(mainScreen, true, false, true, true);
-    }
-
-    private void setupListeners() {
-        // Toggle Nav Drawer
-        drawerToggleBtn.setOnClickListener(v -> drawerLayout.openDrawer(GravityCompat.START));
-
-        // FAB Click Listeners
-        fabMenu.setOnClickListener(v -> toggleFabMenu());
-        fabCreate.setOnClickListener(v -> {
-            closeFabMenu();
-            toProjectSettingsActivity();
-        });
-        fabRestore.setOnClickListener(v -> {
-            closeFabMenu();
-            if (backupRestoreManager != null) {
-                backupRestoreManager.restore();
-            }
-        });
-
-        // Menutup FAB ketika area layar disentuh
-        drawerLayout.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                if (isFabMenuOpen) closeFabMenu();
-                clearSearchFocusAndHideKeyboard();
-            }
-            return false;
-        });
-
-        listProject.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
-                if ((Math.abs(dx) > 0 || Math.abs(dy) > 0) && isFabMenuOpen) {
-                    closeFabMenu();
-                }
-            }
-        });
-    }
-
-    private void setupRecyclerView() {
-        listProject.setLayoutManager(new LinearLayoutManager(this));
-        // Adapter sekarang menggunakan Activity (MainActivity) yang implements AdapterCallback
-        projectsAdapter = new ProjectsAdapter(this, projectsList); 
-        listProject.setAdapter(projectsAdapter);
-        listProject.setHasFixedSize(true);
-    }
-
-    private void setupSearchAndRefresh() {
-        // SwipeRefreshLayout Buatan Anda
-        swipeRefreshLayout.setOnRefreshListener(this::refreshProjectsList);
-
-        // Search Bar Logic
-        searchInputBtn.setOnClickListener(v -> {
-            isSearchOpen = true;
-            inputSearch.setVisibility(View.VISIBLE);
-            clearInputBtn.setVisibility(View.VISIBLE);
-            inputSearch.requestFocus();
-            showKeyboard(inputSearch);
-        });
-
-        clearInputBtn.setOnClickListener(v -> {
-            inputSearch.setText("");
-            closeSearchBar();
-        });
-
-        inputSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                if (projectsAdapter != null) {
-                    projectsAdapter.filterData(s.toString());
-                }
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {}
-        });
-    }
-
-    private void closeSearchBar() {
-        isSearchOpen = false;
-        inputSearch.setText("");
-        inputSearch.setVisibility(View.GONE);
-        clearInputBtn.setVisibility(View.GONE);
-        clearSearchFocusAndHideKeyboard();
-        
-        if (projectsAdapter != null) {
-            projectsAdapter.filterData("");
-        }
-    }
-
-    // ==========================================
-    // MANAJEMEN PROYEK (Diadaptasi dari ProjectsFragment)
-    // ==========================================
-    public void refreshProjectsList() {
-        if (!isStoragePermissionGranted()) {
-            if (swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(false);
-            s(); // Tampilkan pesan storage denied
-            return;
-        }
-
-        executorService.execute(() -> {
-            List<HashMap<String, Object>> loadedProjects = lC.a();
-            loadedProjects.sort(new ProjectComparator(
-                    projectPreference.d("sortBy"), 
-                    projectPreference.a("pinnedProject", "-1"))
-            );
-
-            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new ProjectDiffCallback(projectsList, loadedProjects));
-
-            runOnUiThread(() -> {
-                if (swipeRefreshLayout.isRefreshing()) swipeRefreshLayout.setRefreshing(false);
-                projectsList.clear();
-                projectsList.addAll(loadedProjects);
-                diffResult.dispatchUpdatesTo(projectsAdapter);
-                
-                if (inputSearch != null && inputSearch.getVisibility() == View.VISIBLE) {
-                    projectsAdapter.filterData(inputSearch.getText().toString());
-                }
-            });
-        });
-    }
-
-    private void addProject(String sc_id) {
-        executorService.execute(() -> {
-            HashMap<String, Object> newProject = lC.b(sc_id);
-            if (newProject != null) {
-                runOnUiThread(() -> {
-                    projectsList.add(0, newProject);
-                    projectsAdapter.notifyDataSetChanged();
-                    listProject.scrollToPosition(0);
-                });
-            }
-        });
-    }
-
-    private void updateProject(String sc_id) {
-        executorService.execute(() -> {
-            HashMap<String, Object> updatedProject = lC.b(sc_id);
-            if (updatedProject != null) {
-                int index = IntStream.range(0, projectsList.size())
-                        .filter(i -> projectsList.get(i).get("sc_id").equals(sc_id))
-                        .findFirst().orElse(-1);
-                if (index != -1) {
-                    projectsList.set(index, updatedProject);
-                    runOnUiThread(() -> projectsAdapter.notifyDataSetChanged());
-                }
-            }
-        });
-    }
-
-    @Override
-    public void toDesignActivity(String sc_id) {
-        Intent intent = new Intent(this, DesignActivity.class);
-        ProjectTracker.setScId(sc_id);
-        intent.putExtra("sc_id", sc_id);
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(intent);
-    }
-
-    public void toProjectSettingsActivity() {
-        Intent intent = new Intent(this, MyProjectSettingActivity.class);
-        intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        openProjectSettings.launch(intent);
-    }
-
-    @Override
-    public void openProjectSettings(Intent intent) {
-        openProjectSettings.launch(intent);
-    }
-
-    // ==========================================
-    // UI HELPER & ANIMASI FAB
-    // ==========================================
-    private void toggleFabMenu() {
-        if (!isFabMenuOpen) showFabMenu();
-        else closeFabMenu();
-    }
-
-    private void showFabMenu() {
-        isFabMenuOpen = true;
-        fabCreate.setVisibility(View.VISIBLE);
-        fabRestore.setVisibility(View.VISIBLE);
-
-        fabCreate.animate().translationY(0f).alpha(1.0f).setDuration(150).start();
-        fabRestore.animate().translationY(0f).alpha(1.0f).setDuration(150).start();
-    }
-
-    private void closeFabMenu() {
-        isFabMenuOpen = false;
-        fabCreate.animate().translationY(16f).alpha(0.0f).setDuration(150)
-                .withEndAction(() -> fabCreate.setVisibility(View.GONE)).start();
-        fabRestore.animate().translationY(16f).alpha(0.0f).setDuration(150)
-                .withEndAction(() -> fabRestore.setVisibility(View.GONE)).start();
-    }
-
-    public void clearSearchFocusAndHideKeyboard() {
-        if (inputSearch != null && inputSearch.hasFocus()) {
-            inputSearch.clearFocus();
-            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) {
-                imm.hideSoftInputFromWindow(inputSearch.getWindowToken(), 0);
-            }
-        }
-    }
-
-    private void showKeyboard(View view) {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) {
-            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT);
-        }
-    }
-
-    // ==========================================
-    // LIFECYCLE & PERMISSIONS
-    // ==========================================
-    @Override
-    public void onResume() {
-        super.onResume();
-        long freeMegabytes = GB.c();
-        if (freeMegabytes < 100 && freeMegabytes > 0) {
-            showNoticeNotEnoughFreeStorageSpace();
-        }
-        if (isStoragePermissionGranted() && storageAccessDenied != null && storageAccessDenied.isShown()) {
-            storageAccessDenied.dismiss();
-        }
-        
-        if (needRefreshProjectList) {
-            refreshProjectsList();
-            needRefreshProjectList = false;
-        }
-    }
+    private ProjectsFragment projectsFragment;
+    private Fragment activeFragment;
+    private BackupRestoreManager backupRestoreManager;
+    public static boolean needRefreshProjectList = false;
+    @IdRes
+    private int currentNavItemId = R.id.item_projects;
 
     @Override
     public void g(int i) {
         if (i == 9501) {
             allFilesAccessCheck();
-            refreshProjectsList();
+
+            if (activeFragment instanceof ProjectsFragment) {
+                projectsFragment.refreshProjectsList();
+            }
         }
     }
 
@@ -446,9 +105,423 @@ public class MainActivity extends BasePermissionAppCompatActivity implements Pro
     }
 
     @Override
-    public void l() {}
+    public void l() {
+    }
+
     @Override
-    public void m() {}
+    public void m() {
+    }
+
+    public void n() {
+        if (activeFragment instanceof ProjectsFragment) {
+            projectsFragment.refreshProjectsList();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case 105:
+                    DataResetter.a(this, data.getBooleanExtra("onlyConfig", true));
+                    break;
+
+                case 111:
+                    invalidateOptionsMenu();
+                    break;
+
+                case 113:
+                    if (data != null && data.getBooleanExtra("not_show_popup_anymore", false)) {
+                        u.a("U1I2", (Object) false);
+                    }
+                    break;
+
+                case 212:
+                    if (data != null && !(data.getStringExtra("save_as_new_id") == null ? "" : data.getStringExtra("save_as_new_id")).isEmpty() && isStoragePermissionGranted()) {
+                        if (activeFragment instanceof ProjectsFragment) {
+                            projectsFragment.refreshProjectsList();
+                        }
+                    }
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        drawerToggle.onConfigurationChanged(newConfig);
+        setDrawerCircleIcon();
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        SplashScreen.installSplashScreen(this);
+        super.onCreate(savedInstanceState);
+        
+        enableEdgeToEdgeNoContrast();
+
+        binding = MainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        setSupportActionBar(binding.toolbar);
+
+        binding.statusBarOverlapper.setMinimumHeight(UI.getStatusBarHeight(this));
+        UI.addSystemWindowInsetToPadding(binding.appbar, true, false, true, false);
+
+        u = new DB(getApplicationContext(), "U1");
+        int u1I0 = u.a("U1I0", -1);
+        long u1I1 = u.e("U1I1");
+        if (u1I1 <= 0) {
+            u.a("U1I1", System.currentTimeMillis());
+        }
+        if (System.currentTimeMillis() - u1I1 > 1000 * 60 * 60 * 24) {
+            u.a("U1I0", Integer.valueOf(u1I0 + 1));
+        }
+
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setTitle(null);
+
+        drawerToggle = new ActionBarDrawerToggle(this, binding.drawerLayout, R.string.app_name, R.string.app_name);
+        binding.drawerLayout.addDrawerListener(drawerToggle);
+        binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
+        binding.drawerLayout.setDrawerElevation(0f);
+        binding.drawerLayout.addDrawerListener(new DrawerLayout.DrawerListener() {
+            @Override
+            public void onDrawerSlide(@NonNull View drawerView, float slideOffset) {
+                float moveFactor = drawerView.getWidth() * slideOffset;
+                binding.layoutCoordinator.setTranslationX(moveFactor);
+            }
+
+            @Override
+            public void onDrawerOpened(@NonNull View drawerView) {
+                closeDrawer.setEnabled(true);
+                getOnBackPressedDispatcher().addCallback(closeDrawer);
+            }
+
+            @Override
+            public void onDrawerClosed(@NonNull View drawerView) {
+                binding.layoutCoordinator.setTranslationX(0f);
+            }
+
+            @Override
+            public void onDrawerStateChanged(int newState) {
+            }
+        });
+
+        setupFabMenu();
+        setupProjectSearch();
+
+        GradientDrawable searchCircle = new GradientDrawable();
+        searchCircle.setShape(GradientDrawable.OVAL);
+        searchCircle.setColor(com.google.android.material.color.MaterialColors.getColor(
+                this, R.attr.colorSurface, Color.TRANSPARENT));
+        binding.searchButton.setBackground(searchCircle);
+        setDrawerCircleIcon();
+
+        boolean hasStorageAccess = isStoragePermissionGranted();
+        if (!hasStorageAccess) {
+            showNoticeNeedStorageAccess();
+        }
+        if (hasStorageAccess) {
+            allFilesAccessCheck();
+        }
+
+        if (Intent.ACTION_VIEW.equals(getIntent().getAction())) {
+            Uri data = getIntent().getData();
+            if (data != null) {
+                new SingleCopyTask(this, new SingleCopyTask.CallBackTask() {
+                    @Override
+                    public void onCopyPreExecute() {
+                    }
+
+                    @Override
+                    public void onCopyProgressUpdate(int progress) {
+                    }
+
+                    @Override
+                    public void onCopyPostExecute(@NonNull String path, boolean wasSuccessful, @NonNull String reason) {
+                        if (wasSuccessful) {
+                            BackupRestoreManager manager = new BackupRestoreManager(MainActivity.this, projectsFragment);
+
+                            if (BackupFactory.zipContainsFile(path, "local_libs")) {
+                                new MaterialAlertDialogBuilder(MainActivity.this)
+                                        .setTitle("Warning")
+                                        .setMessage(BackupRestoreManager.getRestoreIntegratedLocalLibrariesMessage(false, -1, -1, null))
+                                        .setPositiveButton("Copy", (dialog, which) -> manager.doRestore(path, true))
+                                        .setNegativeButton("Don't copy", (dialog, which) -> manager.doRestore(path, false))
+                                        .setNeutralButton(R.string.common_word_cancel, null)
+                                        .show();
+                            } else {
+                                manager.doRestore(path, true);
+                            }
+
+                            getIntent().setData(null);
+                        } else {
+                            SketchwareUtil.toastError("Failed to copy backup file to temporary location: " + reason, Toast.LENGTH_LONG);
+                        }
+                    }
+                }).copyFile(data);
+            }
+        }
+
+        if (savedInstanceState != null) {
+            projectsFragment = (ProjectsFragment) getSupportFragmentManager().findFragmentByTag(PROJECTS_FRAGMENT_TAG);
+            currentNavItemId = savedInstanceState.getInt("selected_tab_id");
+            Fragment current = getFragmentForNavId(currentNavItemId);
+            if (current instanceof ProjectsFragment) {
+                navigateToProjectsFragment();
+            }
+            return;
+        }
+
+        navigateToProjectsFragment();
+
+        backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
+        Configs.mainActivity = this;
+        DRSetup.startNow(this);
+    }
+
+    private void setDrawerCircleIcon() {
+        if (binding == null) return;
+        binding.toolbar.setNavigationIcon(new DrawerCircleDrawable(
+                MaterialColors.getColor(this, R.attr.colorSurface, Color.TRANSPARENT),
+                MaterialColors.getColor(this, R.attr.colorOnSurface, Color.WHITE)
+        ));
+    }
+
+    private static class DrawerCircleDrawable extends Drawable {
+        private final Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        DrawerCircleDrawable(int circleColor, int iconColor) {
+            circlePaint.setColor(circleColor);
+            iconPaint.setColor(iconColor);
+            iconPaint.setStrokeWidth(2.2f);
+            iconPaint.setStrokeCap(Paint.Cap.ROUND);
+            iconPaint.setStyle(Paint.Style.STROKE);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            Rect b = getBounds();
+            float cx = b.centerX();
+            float cy = b.centerY();
+            float radius = Math.min(b.width(), b.height()) * 0.42f;
+
+            canvas.drawCircle(cx, cy, radius, circlePaint);
+
+            float left = cx - radius * 0.42f;
+            float right = cx + radius * 0.42f;
+            float top = cy - radius * 0.30f;
+            float mid = cy;
+            float bottom = cy + radius * 0.30f;
+
+            canvas.drawLine(left, top, right, top, iconPaint);
+            canvas.drawLine(left, mid, right, mid, iconPaint);
+            canvas.drawLine(left, bottom, right, bottom, iconPaint);
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            circlePaint.setAlpha(alpha);
+            iconPaint.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(android.graphics.ColorFilter colorFilter) {
+            circlePaint.setColorFilter(colorFilter);
+            iconPaint.setColorFilter(colorFilter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
+        }
+    }
+
+    private void setupProjectSearch() {
+        binding.searchInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                boolean hasText = s != null && s.length() > 0;
+
+                binding.searchButton.setImageResource(
+                        hasText
+                                ? android.R.drawable.ic_menu_close_clear_cancel
+                                : R.drawable.ic_mtrl_search
+                );
+
+                if (projectsFragment != null) {
+                    projectsFragment.filterProjects(s == null ? "" : s.toString());
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
+        binding.searchButton.setOnClickListener(v -> {
+            String query = binding.searchInput.getText().toString();
+
+            if (query.length() > 0) {
+                binding.searchInput.setText("");
+            } else {
+                binding.searchInput.requestFocus();
+                InputMethodManager imm =
+                        (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(binding.searchInput, InputMethodManager.SHOW_IMPLICIT);
+                }
+            }
+        });
+    }
+
+    private void setupFabMenu() {
+        binding.createNewProject.setOnClickListener(v -> {
+            if (isFabMenuOpen) {
+                closeFabMenu();
+            } else {
+                openFabMenu();
+            }
+        });
+
+        binding.fabOverlay.setOnClickListener(v -> closeFabMenu());
+
+        binding.fabCreate.setOnClickListener(v -> {
+            closeFabMenu();
+            if (projectsFragment != null) {
+                projectsFragment.toProjectSettingsActivity();
+            }
+        });
+
+        binding.fabRestore.setOnClickListener(v -> {
+            closeFabMenu();
+            if (backupRestoreManager == null) {
+                backupRestoreManager = new BackupRestoreManager(this, projectsFragment);
+            }
+            backupRestoreManager.restore();
+        });
+    }
+
+    private void openFabMenu() {
+        isFabMenuOpen = true;
+        binding.createNewProject.animate().rotation(0f).setDuration(150).start();
+
+        binding.layoutFabCreate.setVisibility(View.VISIBLE);
+        binding.layoutFabRestore.setVisibility(View.VISIBLE);
+
+        binding.layoutFabCreate.setAlpha(0f);
+        binding.layoutFabCreate.setTranslationY(20f);
+        binding.layoutFabRestore.setAlpha(0f);
+        binding.layoutFabRestore.setTranslationY(20f);
+
+        binding.layoutFabCreate.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(180)
+                .start();
+
+        binding.layoutFabRestore.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay(50)
+                .setDuration(180)
+                .start();
+
+        binding.fabOverlay.setVisibility(View.VISIBLE);
+    }
+
+    private void closeFabMenu() {
+        isFabMenuOpen = false;
+        binding.createNewProject.animate().rotation(0f).setDuration(150).start();
+        binding.layoutFabCreate.setVisibility(View.GONE);
+        binding.layoutFabRestore.setVisibility(View.GONE);
+        binding.fabOverlay.setVisibility(View.GONE);
+    }
+
+    private Fragment getFragmentForNavId(int navItemId) {
+        if (navItemId == R.id.item_projects) {
+            return projectsFragment;
+        }
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("selected_tab_id", currentNavItemId);
+    }
+
+    private void navigateToProjectsFragment() {
+        if (projectsFragment == null) {
+            projectsFragment = new ProjectsFragment();
+        }
+
+        boolean shouldShow = true;
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction transaction = fm.beginTransaction();
+
+        binding.createNewProject.show();
+        if (activeFragment != null) transaction.hide(activeFragment);
+        if (fm.findFragmentByTag(PROJECTS_FRAGMENT_TAG) == null) {
+            shouldShow = false;
+            transaction.add(binding.container.getId(), projectsFragment, PROJECTS_FRAGMENT_TAG);
+        }
+        if (shouldShow) transaction.show(projectsFragment);
+        transaction.commit();
+
+        activeFragment = projectsFragment;
+        currentNavItemId = R.id.item_projects;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (drawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        } else {
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        drawerToggle.syncState();
+        setDrawerCircleIcon();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        long freeMegabytes = GB.c();
+        if (freeMegabytes < 100 && freeMegabytes > 0) {
+            showNoticeNotEnoughFreeStorageSpace();
+        }
+        if (isStoragePermissionGranted() && storageAccessDenied != null && storageAccessDenied.isShown()) {
+            storageAccessDenied.dismiss();
+        }
+        Bundle bundle = new Bundle();
+        bundle.putString(FirebaseAnalytics.Param.SCREEN_NAME, "MainActivity");
+        bundle.putString(FirebaseAnalytics.Param.SCREEN_CLASS, "MainActivity");
+        mAnalytics.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, bundle);
+
+        if (needRefreshProjectList) {
+            projectsFragment.refreshProjectsList();
+            needRefreshProjectList = false;
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
 
     private void allFilesAccessCheck() {
         if (Build.VERSION.SDK_INT > 29) {
@@ -459,7 +532,7 @@ public class MainActivity extends BasePermissionAppCompatActivity implements Pro
                 MaterialAlertDialogBuilder dialog = new MaterialAlertDialogBuilder(this);
                 dialog.setIcon(R.drawable.ic_mtrl_warning);
                 dialog.setTitle("Android 11 storage access");
-                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid taking ages to build projects.");
+                dialog.setMessage("Starting with Android 11, Sketchware Pro needs a new permission to avoid taking ages to build projects. Don't worry, we can't do more to storage than with current granted permissions.");
                 dialog.setPositiveButton(Helper.getResString(R.string.common_word_settings), (v, which) -> {
                     FileUtil.requestAllFilesAccessPermission(this);
                     v.dismiss();
@@ -467,9 +540,10 @@ public class MainActivity extends BasePermissionAppCompatActivity implements Pro
                 dialog.setNegativeButton("Skip", null);
                 dialog.setNeutralButton("Don't show anymore", (v, which) -> {
                     try {
-                        optOutFile.createNewFile();
+                        if (!optOutFile.createNewFile())
+                            throw new IOException("Failed to create file " + optOutFile);
                     } catch (IOException e) {
-                        Log.e("MainActivity", "Error: " + e.getMessage(), e);
+                        Log.e("MainActivity", "Error while trying to create dialog file: " + e.getMessage(), e);
                     }
                     v.dismiss();
                 });
@@ -501,71 +575,13 @@ public class MainActivity extends BasePermissionAppCompatActivity implements Pro
 
     public void s() {
         if (storageAccessDenied == null || !storageAccessDenied.isShown()) {
-            storageAccessDenied = Snackbar.make(findViewById(android.R.id.content), Helper.getResString(R.string.common_message_permission_denied), Snackbar.LENGTH_INDEFINITE);
+            storageAccessDenied = Snackbar.make(binding.layoutCoordinator, Helper.getResString(R.string.common_message_permission_denied), Snackbar.LENGTH_INDEFINITE);
             storageAccessDenied.setAction(Helper.getResString(R.string.common_word_settings), v -> {
                 storageAccessDenied.dismiss();
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, 9501);
             });
             storageAccessDenied.setActionTextColor(Color.YELLOW);
             storageAccessDenied.show();
-        }
-    }
-
-    private void handleIntentData() {
-        if (Intent.ACTION_VIEW.equals(getIntent().getAction())) {
-            Uri data = getIntent().getData();
-            if (data != null) {
-                new SingleCopyTask(this, new SingleCopyTask.CallBackTask() {
-                    @Override public void onCopyPreExecute() {}
-                    @Override public void onCopyProgressUpdate(int progress) {}
-                    @Override public void onCopyPostExecute(@NonNull String path, boolean wasSuccessful, @NonNull String reason) {
-                        if (wasSuccessful) {
-                            BackupRestoreManager manager = new BackupRestoreManager(MainActivity.this, null);
-                            if (BackupFactory.zipContainsFile(path, "local_libs")) {
-                                new MaterialAlertDialogBuilder(MainActivity.this)
-                                        .setTitle("Warning")
-                                        .setMessage(BackupRestoreManager.getRestoreIntegratedLocalLibrariesMessage(false, -1, -1, null))
-                                        .setPositiveButton("Copy", (dialog, which) -> manager.doRestore(path, true))
-                                        .setNegativeButton("Don't copy", (dialog, which) -> manager.doRestore(path, false))
-                                        .setNeutralButton(R.string.common_word_cancel, null).show();
-                            } else {
-                                manager.doRestore(path, true);
-                            }
-                            getIntent().setData(null);
-                        } else {
-                            SketchwareUtil.toastError("Failed to copy backup file to temporary location: " + reason, Toast.LENGTH_LONG);
-                        }
-                    }
-                }).copyFile(data);
-            }
-        }
-    }
-
-    // ==========================================
-    // UTILITY KELAS DIFF CALLBACK
-    // ==========================================
-    private static class ProjectDiffCallback extends DiffUtil.Callback {
-        private final List<HashMap<String, Object>> oldList;
-        private final List<HashMap<String, Object>> newList;
-
-        public ProjectDiffCallback(List<HashMap<String, Object>> oldList, List<HashMap<String, Object>> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
-
-        @Override public int getOldListSize() { return oldList.size(); }
-        @Override public int getNewListSize() { return newList.size(); }
-        
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            String oldId = (String) oldList.get(oldItemPosition).get("sc_id");
-            String newId = (String) newList.get(newItemPosition).get("sc_id");
-            return oldId.equals(newId);
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).equals(newList.get(newItemPosition));
         }
     }
 }
