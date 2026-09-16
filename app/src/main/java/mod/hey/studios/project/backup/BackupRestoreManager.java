@@ -27,7 +27,6 @@ import dev.pranav.filepicker.FilePickerOptions;
 import extensions.anbui.daydream.settings.FilePickerSettings;
 import mod.hey.studios.util.Helper;
 import pro.sketchware.R;
-import pro.sketchware.activities.main.fragments.projects.ProjectsFragment;
 import pro.sketchware.databinding.ProgressMsgBoxBinding;
 import pro.sketchware.utility.FileUtil;
 import pro.sketchware.utility.SketchwareUtil;
@@ -36,8 +35,8 @@ public class BackupRestoreManager {
 
     private Activity act;
 
-    // Needed to refresh the project list after restoring
-    private static ProjectsFragment projectsFragment;
+    // Made nullable for backwards compatibility - can be null when used from MainActivity
+    private static Object projectsFragment;
 
     private HashMap<Integer, Boolean> backupDialogStates;
 
@@ -45,7 +44,7 @@ public class BackupRestoreManager {
         this.act = act;
     }
 
-    public BackupRestoreManager(Activity act, ProjectsFragment projectsFragment) {
+    public BackupRestoreManager(Activity act, Object projectsFragment) {
         this.act = act;
         this.projectsFragment = projectsFragment;
     }
@@ -54,7 +53,7 @@ public class BackupRestoreManager {
         if (!restoringMultipleBackups) {
             return "Looks like the backup file you selected contains some Local libraries. Do you want to copy them to your local_libs directory (if they do not already exist)?";
         } else {
-            return "Looks like backup file " + filename + " (" + (currentRestoringIndex + 1) + " out of " + totalAmountOfBackups + ") contains some Local libraries. Do you want to copy them to your local_libs directory (if they do not already exist)?";
+            return "Looks like backup file " + filename + " (" + (currentRestoringIndex + 1) + " out of " + totalAmountOfBackups + ") contains some Local libraries. Do you want to copy them to your local_libs directory?";
         }
     }
 
@@ -166,7 +165,18 @@ public class BackupRestoreManager {
             }
         };
 
-        new FilePickerDialogFragment(options, callback).show(projectsFragment.getChildFragmentManager(), "file_picker");
+        // Only try to show file picker if projectsFragment is available
+        if (projectsFragment != null && projectsFragment instanceof com.google.android.material.bottomsheet.BottomSheetDialogFragment) {
+            // Legacy code for fragment support
+            try {
+                Object fragmentManager = projectsFragment.getClass().getMethod("getChildFragmentManager").invoke(projectsFragment);
+                new FilePickerDialogFragment(options, callback).show((androidx.fragment.app.FragmentManager) fragmentManager, "file_picker");
+            } catch (Exception e) {
+                SketchwareUtil.toastError("Error opening file picker", Toast.LENGTH_SHORT);
+            }
+        } else {
+            SketchwareUtil.toastError("Fragment context not available for file picker", Toast.LENGTH_SHORT);
+        }
     }
 
     public void doRestore(String file, boolean restoreLocalLibs) {
@@ -232,13 +242,13 @@ public class BackupRestoreManager {
 
         private final WeakReference<Activity> activityWeakReference;
         private final String file;
-        private final ProjectsFragment projectsFragment;
+        private final Object projectsFragment;
         private final boolean restoreLocalLibs;
         private BackupFactory bm;
         private AlertDialog dlg;
         private boolean error = false;
 
-        RestoreAsyncTask(WeakReference<Activity> activityWeakReference, String file, boolean restoreLocalLibraries, ProjectsFragment projectsFragment) {
+        RestoreAsyncTask(WeakReference<Activity> activityWeakReference, String file, boolean restoreLocalLibraries, Object projectsFragment) {
             this.activityWeakReference = activityWeakReference;
             this.file = file;
             this.projectsFragment = projectsFragment;
@@ -279,7 +289,12 @@ public class BackupRestoreManager {
             if (!bm.isRestoreSuccess() || error) {
                 SketchwareUtil.toastError("Couldn't restore: " + bm.error, Toast.LENGTH_LONG);
             } else if (projectsFragment != null) {
-                projectsFragment.refreshProjectsList();
+                // Try to call refreshProjectsList if projectsFragment has it
+                try {
+                    projectsFragment.getClass().getMethod("refreshProjectsList").invoke(projectsFragment);
+                } catch (Exception e) {
+                    SketchwareUtil.toast("Restored successfully. Refresh to see the project", Toast.LENGTH_LONG);
+                }
                 SketchwareUtil.toast("Restored successfully");
             } else {
                 SketchwareUtil.toast("Restored successfully. Refresh to see the project", Toast.LENGTH_LONG);
