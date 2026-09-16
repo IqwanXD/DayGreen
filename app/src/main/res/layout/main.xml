@@ -42,8 +42,8 @@
                             android:layout_width="0dp"
                             android:layout_height="48dp"
                             android:layout_weight="1"
-                            app:cardBackgroundColor="?attr/colorSurface"
-                            app:cardCornerRadius="24dp"
+                            app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                            app:cardCornerRadius="28dp"
                             app:cardElevation="0dp"
                             app:strokeWidth="0dp">
 
@@ -68,7 +68,7 @@
                             android:layout_width="48dp"
                             android:layout_height="48dp"
                             android:layout_marginStart="6dp"
-                            android:background="@android:color/transparent"
+                            android:background="?attr/colorSurfaceContainer"
                             android:contentDescription="Search"
                             android:padding="12dp"
                             android:src="@drawable/ic_mtrl_search"
@@ -115,12 +115,32 @@
                 android:orientation="horizontal"
                 android:visibility="gone">
 
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/fab_restore"
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:fabSize="mini"
-                    app:srcCompat="@drawable/ic_mtrl_folder"
+                    android:layout_marginEnd="12dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="14dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="8dp"
+                        android:text="Restore"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="14sp" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fab_restore"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    app:srcCompat="@drawable/ic_mtrl_history"
                     tools:ignore="ContentDescription" />
             </LinearLayout>
 
@@ -134,11 +154,31 @@
                 android:orientation="horizontal"
                 android:visibility="gone">
 
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/fab_create"
+                <com.google.android.material.card.MaterialCardView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    app:fabSize="mini"
+                    android:layout_marginEnd="12dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceContainer"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingStart="14dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="14dp"
+                        android:paddingBottom="8dp"
+                        android:text="Create"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="14sp" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/fab_create"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
                     app:srcCompat="@drawable/ic_mtrl_add"
                     tools:ignore="ContentDescription" />
             </LinearLayout>
@@ -146,8 +186,8 @@
             <!-- Main Floating Action Button -->
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/create_new_project"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
                 app:srcCompat="@drawable/ic_mtrl_folder"
                 tools:ignore="ContentDescription" />
         </LinearLayout>

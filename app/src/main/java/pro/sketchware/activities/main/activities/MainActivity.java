@@ -17,6 +17,7 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.text.Editable;
@@ -183,6 +184,15 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         getSupportActionBar().setTitle(null);
 
         drawerToggle = new ActionBarDrawerToggle(this, binding.drawerLayout, R.string.app_name, R.string.app_name);
+        drawerToggle.setDrawerIndicatorEnabled(false);
+        binding.toolbar.setNavigationOnClickListener(v -> {
+            clearSearchFocus();
+            if (binding.drawerLayout.isDrawerOpen(binding.leftDrawer)) {
+                binding.drawerLayout.closeDrawer(binding.leftDrawer);
+            } else {
+                binding.drawerLayout.openDrawer(binding.leftDrawer);
+            }
+        });
         binding.drawerLayout.addDrawerListener(drawerToggle);
         binding.drawerLayout.setScrimColor(Color.TRANSPARENT);
         binding.drawerLayout.setDrawerElevation(0f);
@@ -214,10 +224,9 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
         GradientDrawable searchCircle = new GradientDrawable();
         searchCircle.setShape(GradientDrawable.OVAL);
-        searchCircle.setColor(com.google.android.material.color.MaterialColors.getColor(
-                this, R.attr.colorSurface, Color.TRANSPARENT));
+        searchCircle.setColor(MaterialColors.getColor(
+                this, R.attr.colorSurfaceContainer, Color.TRANSPARENT));
         binding.searchButton.setBackground(searchCircle);
-        setDrawerCircleIcon();
 
         boolean hasStorageAccess = isStoragePermissionGranted();
         if (!hasStorageAccess) {
@@ -284,17 +293,21 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
     private void setDrawerCircleIcon() {
         if (binding == null) return;
-        binding.toolbar.setNavigationIcon(new DrawerCircleDrawable(
-                MaterialColors.getColor(this, R.attr.colorSurface, Color.TRANSPARENT),
-                MaterialColors.getColor(this, R.attr.colorOnSurface, Color.WHITE)
-        ));
+        DrawerCircleDrawable icon = new DrawerCircleDrawable(
+                MaterialColors.getColor(this, R.attr.colorSurfaceContainer, Color.TRANSPARENT),
+                MaterialColors.getColor(this, R.attr.colorOnSurface, Color.WHITE),
+                (int) (40 * getResources().getDisplayMetrics().density)
+        );
+        binding.toolbar.setNavigationIcon(icon);
     }
 
     private static class DrawerCircleDrawable extends Drawable {
         private final Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int size;
 
-        DrawerCircleDrawable(int circleColor, int iconColor) {
+        DrawerCircleDrawable(int circleColor, int iconColor, int size) {
+            this.size = size;
             circlePaint.setColor(circleColor);
             iconPaint.setColor(iconColor);
             iconPaint.setStrokeWidth(2.2f);
@@ -307,7 +320,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             Rect b = getBounds();
             float cx = b.centerX();
             float cy = b.centerY();
-            float radius = Math.min(b.width(), b.height()) * 0.42f;
+            float radius = Math.min(b.width(), b.height()) * 0.36f;
 
             canvas.drawCircle(cx, cy, radius, circlePaint);
 
@@ -320,6 +333,16 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             canvas.drawLine(left, top, right, top, iconPaint);
             canvas.drawLine(left, mid, right, mid, iconPaint);
             canvas.drawLine(left, bottom, right, bottom, iconPaint);
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return size;
         }
 
         @Override
@@ -340,6 +363,35 @@ public class MainActivity extends BasePermissionAppCompatActivity {
         }
     }
 
+    private void clearSearchFocus() {
+        if (binding == null) return;
+        if (binding.searchInput.hasFocus()) {
+            binding.searchInput.clearFocus();
+            InputMethodManager imm =
+                    (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(binding.searchInput.getWindowToken(), 0);
+            }
+        }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        if (event.getAction() == MotionEvent.ACTION_DOWN && binding != null
+                && binding.searchInput.hasFocus()) {
+            Rect searchRect = new Rect();
+            Rect buttonRect = new Rect();
+            binding.searchContainer.getGlobalVisibleRect(searchRect);
+            binding.searchButton.getGlobalVisibleRect(buttonRect);
+
+            if (!searchRect.contains((int) event.getRawX(), (int) event.getRawY())
+                    && !buttonRect.contains((int) event.getRawX(), (int) event.getRawY())) {
+                clearSearchFocus();
+            }
+        }
+        return super.dispatchTouchEvent(event);
+    }
+
     private void setupProjectSearch() {
         binding.searchInput.addTextChangedListener(new TextWatcher() {
             @Override
@@ -352,7 +404,7 @@ public class MainActivity extends BasePermissionAppCompatActivity {
 
                 binding.searchButton.setImageResource(
                         hasText
-                                ? android.R.drawable.ic_menu_close_clear_cancel
+                                ? R.drawable.ic_mtrl_close
                                 : R.drawable.ic_mtrl_search
                 );
 
@@ -391,7 +443,10 @@ public class MainActivity extends BasePermissionAppCompatActivity {
             }
         });
 
-        binding.fabOverlay.setOnClickListener(v -> closeFabMenu());
+        binding.fabOverlay.setOnClickListener(v -> {
+            closeFabMenu();
+            clearSearchFocus();
+        });
 
         binding.fabCreate.setOnClickListener(v -> {
             closeFabMenu();

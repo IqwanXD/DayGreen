@@ -35,7 +35,6 @@ import java.util.stream.IntStream;
 import a.a.a.DA;
 import a.a.a.DB;
 import a.a.a.lC;
-import extensions.anbui.daydream.project.RestoreProject;
 import mod.hey.studios.project.ProjectTracker;
 import pro.sketchware.R;
 import pro.sketchware.activities.main.activities.MainActivity;
@@ -136,15 +135,13 @@ public class ProjectsFragment extends DA {
         binding.myprojects.setHasFixedSize(true);
 
         binding.myprojects.post(this::refreshProjectsList);
-        UI.addSystemWindowInsetToPadding(binding.specialActionContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.loadingContainer, true, false, true, true);
         UI.addSystemWindowInsetToPadding(binding.titleContainer, true, false, true, false);
         UI.addSystemWindowInsetToPadding(binding.myprojects, true, false, true, true);
 
         binding.iconSort.setVisibility(View.GONE);
         binding.titleContainer.setVisibility(View.GONE);
-
-        RestoreProject.setupDropFileTo(getActivity(), binding.specialAction.getRoot());
+        binding.specialActionContainer.setVisibility(View.GONE);
 
     }
 
@@ -155,52 +152,85 @@ public class ProjectsFragment extends DA {
         }
 
         if (binding != null) {
-            boolean empty = query == null || query.trim().isEmpty();
-            binding.specialActionContainer.setVisibility(empty ? View.VISIBLE : View.GONE);
+            binding.specialActionContainer.setVisibility(View.GONE);
             binding.titleContainer.setVisibility(View.GONE);
         }
     }
 
     public void refreshProjectsList() {
-        if (!isAdded()) return;
+    if (!isAdded()) return;
 
-        if (!c()) {
-            if (binding.swipeRefresh.isRefreshing()) binding.swipeRefresh.setRefreshing(false);
-            ((MainActivity) requireActivity()).s();
-            return;
+    if (!c()) {
+        if (binding.swipeRefresh.isRefreshing()) {
+            binding.swipeRefresh.setRefreshing(false);
         }
 
-        executorService.execute(() -> {
-            List<HashMap<String, Object>> loadedProjects = lC.a();
-            loadedProjects.sort(new ProjectComparator(preference.d("sortBy"), preference.a("pinnedProject", "-1")));
-
-            DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new ProjectDiffCallback(projectsList, loadedProjects));
-
-            requireActivity().runOnUiThread(() -> {
-                if (binding.swipeRefresh.isRefreshing()) binding.swipeRefresh.setRefreshing(false);
-                if (binding.loadingContainer.getVisibility() == View.VISIBLE) {
-                    binding.loadingContainer.setVisibility(View.GONE);
-                    binding.myprojects.setVisibility(View.VISIBLE);
-                }
-                projectsList.clear();
-                projectsList.addAll(loadedProjects);
-                diffResult.dispatchUpdatesTo(projectsAdapter);
-            });
-        });
+        ((MainActivity) requireActivity()).s();
+        return;
     }
+
+    executorService.execute(() -> {
+        List<HashMap<String, Object>> loadedProjects = lC.a();
+
+        loadedProjects.sort(
+                new ProjectComparator(
+                        preference.d("sortBy"),
+                        preference.a("pinnedProject", "-1")
+                )
+        );
+
+        DiffUtil.DiffResult diffResult =
+                DiffUtil.calculateDiff(
+                        new ProjectDiffCallback(
+                                projectsList,
+                                loadedProjects
+                        )
+                );
+
+        requireActivity().runOnUiThread(() -> {
+            if (binding == null) return;
+
+            if (binding.swipeRefresh.isRefreshing()) {
+                binding.swipeRefresh.setRefreshing(false);
+            }
+
+            if (binding.loadingContainer.getVisibility() == View.VISIBLE) {
+                binding.loadingContainer.setVisibility(View.GONE);
+                binding.myprojects.setVisibility(View.VISIBLE);
+            }
+
+            projectsList.clear();
+            projectsList.addAll(loadedProjects);
+
+            diffResult.dispatchUpdatesTo(projectsAdapter);
+
+            // WAJIB agar project langsung muncul
+            // tanpa harus mengetik search terlebih dahulu.
+            projectsAdapter.filterData("");
+        });
+    });
+}
 
     private void addProject(String sc_id) {
-        executorService.execute(() -> {
-            HashMap<String, Object> newProject = lC.b(sc_id);
-            if (newProject != null) {
-                requireActivity().runOnUiThread(() -> {
-                    projectsList.add(0, newProject);
-                    projectsAdapter.notifyDataSetChanged();
-                    binding.myprojects.scrollToPosition(0);
-                });
-            }
-        });
-    }
+    executorService.execute(() -> {
+        HashMap<String, Object> newProject = lC.b(sc_id);
+
+        if (newProject != null) {
+            requireActivity().runOnUiThread(() -> {
+                if (binding == null || projectsAdapter == null) return;
+
+                projectsList.add(0, newProject);
+
+                projectsAdapter.notifyDataSetChanged();
+
+                // Sinkronkan filter adapter
+                projectsAdapter.filterData("");
+
+                binding.myprojects.scrollToPosition(0);
+            });
+        }
+    });
+}
 
     private void updateProject(String sc_id) {
         executorService.execute(() -> {
