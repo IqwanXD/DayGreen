@@ -1,4 +1,4 @@
-package activities.main.activities;
+package pro.sketchware.activities.main.activities;
 
 import android.animation.*;
 import android.app.Activity;
@@ -20,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import ru.inoui.InoViewPager;
+import pro.sketchware.R;
 
 public class SetupActivity extends Activity {
 
@@ -190,7 +191,7 @@ public class SetupActivity extends Activity {
         prevbtn.setGravity(Gravity.CENTER);
         
         previcon = new ImageView(this);
-        previcon.setImageResource(R.drawable.icon_arrow_back);
+        previcon.setImageResource(R.drawable.arrow_back_24px);
         previcon.setColorFilter(Color.parseColor("#889E97"));
         prevbtn.addView(previcon, new LinearLayout.LayoutParams(dpToPx(24), dpToPx(24)));
         prevbtn.setVisibility(View.GONE);
@@ -206,7 +207,8 @@ public class SetupActivity extends Activity {
         nextbtn.setGravity(Gravity.CENTER);
 
         nexticon = new ImageView(this);
-        nexticon.setImageResource(R.drawable.icon_arrow_forward);
+        nexticon.setRotation((float)(180));
+        nexticon.setImageResource(R.drawable.arrow_back_24px);
         nexticon.setColorFilter(Color.parseColor("#A3F1D7"));
         nextbtn.addView(nexticon, new LinearLayout.LayoutParams(dpToPx(24), dpToPx(24)));
 
