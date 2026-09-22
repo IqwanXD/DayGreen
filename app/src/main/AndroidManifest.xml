@@ -174,12 +174,7 @@
             android:name=".activities.main.activities.MainActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:theme="@style/Theme.SketchwarePro.Starting">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            android:theme="@style/Theme.SketchwarePro">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -196,6 +191,17 @@
                 <data android:pathPattern=".*\\..*\\..*\\..*\\.swb" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".activities.main.activities.SetupActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="true"
+            android:theme="@style/Theme.SketchwarePro.Starting">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>    
         <activity
             android:name="com.besome.sketch.editor.manage.view.ManageViewActivity"
             android:configChanges="orientation|screenSize" />
