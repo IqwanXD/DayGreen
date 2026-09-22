@@ -1,0 +1,46 @@
+{
+  "languages": [
+    {
+      "grammar": "textmate/java/syntaxes/java.tmLanguage.json",
+      "name": "java",
+      "scopeName": "source.java",
+      "languageConfiguration": "textmate/java/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/kotlin/syntaxes/Kotlin.tmLanguage",
+      "name": "kotlin",
+      "scopeName": "source.kotlin",
+      "languageConfiguration": "textmate/kotlin/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/xml/syntaxes/xml.tmLanguage.json",
+      "name": "xml",
+      "scopeName": "text.xml",
+      "languageConfiguration": "textmate/xml/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/javascript/syntaxes/javascript.tmLanguage.json",
+      "name": "javascript",
+      "scopeName": "source.javascript",
+      "languageConfiguration": "textmate/javascript/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/css/syntaxes/css.tmLanguage.json",
+      "name": "css",
+      "scopeName": "source.css",
+      "languageConfiguration": "textmate/css/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/cpp/syntaxes/cpp.tmLanguage.json",
+      "name": "cpp",
+      "scopeName": "source.cpp",
+      "languageConfiguration": "textmate/cpp/language-configuration.json"
+    },
+    {
+      "grammar": "textmate/c/syntaxes/c.tmLanguage.json",
+      "name": "c",
+      "scopeName": "source.c",
+      "languageConfiguration": "textmate/c/language-configuration.json"
+    }
+  ]
+}

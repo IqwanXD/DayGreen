@@ -1,0 +1,133 @@
+package org.sketchware.daygreen
+
+import android.content.Context
+import android.text.format.Formatter
+import android.util.Log
+import java.io.File
+import mod.jbk.build.BuiltInLibraries
+
+object FileCheckUtils {
+    private const val TAG = "FileCheckUtils"
+
+    @JvmStatic
+    fun isAaptDownloaded(context: Context): Boolean {
+        val aapt2Binary = File(context.filesDir, "bin/aapt2")
+        return aapt2Binary.exists() && aapt2Binary.length() > 0
+    }
+
+    @JvmStatic
+    fun isSdkDownloaded(context: Context): Boolean {
+        val legacySdk = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android.jar")
+        if (legacySdk.exists() && legacySdk.length() > 0) return true
+        
+        val libsDir = BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH
+        return libsDir.exists() && libsDir.listFiles { file -> 
+            file.isFile && file.name.startsWith("android-") && file.name.endsWith(".jar") && file.length() > 0
+        }?.isNotEmpty() == true
+    }
+
+    @JvmStatic
+    fun isNdkDownloaded(context: Context): Boolean {
+        val toolsDir = File(context.filesDir, "native")
+        val toolchainFile = mod.jbk.build.compiler.native_code.NativeCompiler.findToolchainFile(toolsDir)
+        if (toolchainFile != null && toolchainFile.exists() && toolchainFile.length() > 0) return true
+        
+        val ndkDir = File(context.filesDir, "native/ndk")
+        if (ndkDir.exists() && (File(ndkDir, "source.properties").exists() || File(ndkDir, "bin").exists() || File(ndkDir, "toolchains").exists())) return true
+
+        val binNdkDir = File(context.filesDir, "bin/android-ndk")
+        return binNdkDir.exists() && (File(binNdkDir, "source.properties").exists() || File(binNdkDir, "bin").exists() || File(binNdkDir, "toolchains").exists())
+    }
+
+    @JvmStatic
+    fun isCmakeDownloaded(context: Context): Boolean {
+        val toolsDir = File(context.filesDir, "native")
+        val cmakeBinary = mod.jbk.build.compiler.native_code.NativeCompiler.findCmakeBinary(toolsDir)
+        return cmakeBinary != null && cmakeBinary.exists() && cmakeBinary.length() > 0
+    }
+
+    fun getToolStatus(isInstalled: Boolean): String {
+        return if (isInstalled) "Installed" else "Not Installed"
+    }
+
+    private fun getFolderSize(file: File): Long {
+        if (!file.exists()) return 0
+        if (file.isFile) return file.length()
+        var size: Long = 0
+        val files = file.listFiles()
+        if (files != null) {
+            for (f in files) {
+                size += getFolderSize(f)
+            }
+        }
+        return size
+    }
+
+    private fun formatFileSize(context: Context, sizeInBytes: Long): String {
+        return Formatter.formatShortFileSize(context, sizeInBytes)
+    }
+
+    @JvmStatic
+    fun getNdkSize(context: Context): String {
+        val ndkDir = File(context.filesDir, "native/ndk")
+        if (ndkDir.exists()) {
+            return formatFileSize(context, getFolderSize(ndkDir))
+        }
+        val binNdkDir = File(context.filesDir, "bin/android-ndk")
+        if (binNdkDir.exists()) {
+            return formatFileSize(context, getFolderSize(binNdkDir))
+        }
+        return "~360 MB"
+    }
+
+    @JvmStatic
+    fun getCmakeSize(context: Context): String {
+        val cmakeDir = File(context.filesDir, "native/cmake")
+        if (cmakeDir.exists()) {
+            return formatFileSize(context, getFolderSize(cmakeDir))
+        }
+        val binCmakeDir = File(context.filesDir, "bin/cmake")
+        if (binCmakeDir.exists()) {
+            return formatFileSize(context, getFolderSize(binCmakeDir))
+        }
+        return "~48 MB"
+    }
+
+    @JvmStatic
+    fun getAaptSize(context: Context): String {
+        val aaptFile = File(context.filesDir, "bin/aapt2")
+        if (aaptFile.exists()) {
+            return formatFileSize(context, aaptFile.length())
+        }
+        return "~5 MB"
+    }
+
+    @JvmStatic
+    fun getSdkVersionSize(context: Context, version: String): String {
+        if (version.isNotEmpty()) {
+            val sdkFile = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android-$version.jar")
+            if (sdkFile.exists()) {
+                return formatFileSize(context, sdkFile.length())
+            }
+        }
+        return "~30 MB"
+    }
+
+    @JvmStatic
+    fun isSdkVersionDownloaded(version: String): Boolean {
+        if (version.isEmpty()) return true
+        val sdkFile = File(BuiltInLibraries.EXTRACTED_COMPILE_ASSETS_PATH, "android-$version.jar")
+        return sdkFile.exists() && sdkFile.length() > 0
+    }
+
+    @JvmStatic
+    fun getInstalledSdks(context: Context): List<Int> {
+        val libsDir = File(context.filesDir, "libs")
+        if (!libsDir.exists()) return emptyList()
+        
+        return libsDir.listFiles { file -> file.isFile && file.name.startsWith("android-") && file.name.endsWith(".jar") && file.length() > 0 }
+            ?.mapNotNull { file ->
+                file.name.removePrefix("android-").removeSuffix(".jar").toIntOrNull()
+            }?.sorted() ?: emptyList()
+    }
+}
