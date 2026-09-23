@@ -15,6 +15,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.MotionEvent;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -400,14 +401,18 @@ public class SetupActivity extends Activity {
     }
 
     private void setupButtonAnimations(View button) {
-        button.setOnHoverListener((v, hasFocus) -> {
-            if (hasFocus) {
-                ObjectAnimator elevation = ObjectAnimator.ofFloat(v, "elevation", 0, dpToPx(8));
-                elevation.setDuration(150);
-                elevation.start();
-            }
-            return false;
-        });
+    button.setOnHoverListener((v, event) -> {
+        if (event.getActionMasked() == MotionEvent.ACTION_HOVER_ENTER) {
+            ObjectAnimator elevation = ObjectAnimator.ofFloat(v, "elevation", 0f, dpToPx(8));
+            elevation.setDuration(150);
+            elevation.start();
+        } else if (event.getActionMasked() == MotionEvent.ACTION_HOVER_EXIT) {
+            ObjectAnimator elevation = ObjectAnimator.ofFloat(v, "elevation", v.getElevation(), 0f);
+            elevation.setDuration(150);
+            elevation.start();
+        }
+        return false;
+    });
     }
 
     private void fadeOut(View view) {
