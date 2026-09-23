@@ -8,16 +8,19 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
+import android.widget.Switch;
 import android.widget.TextView;
 import ru.inoui.InoViewPager;
 import pro.sketchware.R;
@@ -34,9 +37,10 @@ public class SetupActivity extends Activity {
     private ImageView previcon;
     private ImageView nexticon;
     private TextView nextText;
+    private ProgressBar loadingIndicator;
 
-    private CheckBox cbNotification;
-    private CheckBox cbStorage;
+    private Switch swNotification;
+    private Switch swStorage;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,107 +79,155 @@ public class SetupActivity extends Activity {
         // --- PAGE 1: Welcome Page ---
         LinearLayout welcomePage = createBasePageLayout();
         
+        // App Icon
         ImageView appIcon = new ImageView(this);
         appIcon.setImageResource(R.drawable.daygreen);
         appIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        welcomePage.addView(appIcon, new LinearLayout.LayoutParams(dpToPx(80), dpToPx(80)));
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(dpToPx(100), dpToPx(100));
+        iconParams.bottomMargin = dpToPx(24);
+        welcomePage.addView(appIcon, iconParams);
 
+        // App Name
         TextView appName = new TextView(this);
         appName.setText("DayGreen");
-        appName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+        appName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 32);
         appName.setTypeface(null, Typeface.BOLD);
         appName.setTextColor(Color.WHITE);
         LinearLayout.LayoutParams appNameParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        appNameParams.topMargin = dpToPx(8);
-        appNameParams.bottomMargin = dpToPx(20);
+        appNameParams.bottomMargin = dpToPx(32);
         welcomePage.addView(appName, appNameParams);
 
-        // Container Outline untuk Kartu Informasi
-        LinearLayout cardWelcome = createOutlineCard();
-        
-        addCardSection(cardWelcome, "Welcome to DayGreen", "#E0E0E0", 18, true);
-        addCardSection(cardWelcome, "Sketchware Pro Mod", "#B0B0B0", 12, false);
-        addSpace(cardWelcome, 12);
+        // Welcome Text
+        TextView welcomeTitle = new TextView(this);
+        welcomeTitle.setText("Welcome to Sketchware!");
+        welcomeTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+        welcomeTitle.setTypeface(null, Typeface.BOLD);
+        welcomeTitle.setTextColor(Color.WHITE);
+        welcomeTitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams welcomeTitleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        welcomeTitleParams.bottomMargin = dpToPx(12);
+        welcomePage.addView(welcomeTitle, welcomeTitleParams);
 
-        addCardSection(cardWelcome, "Build Android apps with freedom!", "#F5F5F5", 14, true);
-        addCardSection(cardWelcome, "The community-driven continuation of Sketchware Pro.", "#A0A0A0", 13, false);
-        addSpace(cardWelcome, 12);
+        // Subtitle
+        TextView subtitle = new TextView(this);
+        subtitle.setText("A place to build and realize dreams");
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        subtitle.setTextColor(Color.parseColor("#A3F1D7"));
+        subtitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        subtitleParams.bottomMargin = dpToPx(48);
+        welcomePage.addView(subtitle, subtitleParams);
 
-        addCardSection(cardWelcome, "Key Features:", "#E0E0E0", 14, true);
-        addCardSection(cardWelcome, "No-code builder - Visual drag-and-drop interface", "#CCCCCC", 13, false);
-        addCardSection(cardWelcome, "Modern components - Advanced UI toolkit", "#CCCCCC", 13, false);
-        addCardSection(cardWelcome, "100% Free - Forever open source", "#CCCCCC", 13, false);
-        addCardSection(cardWelcome, "Community driven - Made by developers", "#CCCCCC", 13, false);
-        addSpace(cardWelcome, 12);
+        // Add spacer untuk push content ke atas
+        View spacer = new View(this);
+        welcomePage.addView(spacer, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f));
 
-        addCardSection(cardWelcome, "Start building your ideas now!", "#F5F5F5", 14, true);
-        addSpace(cardWelcome, 8);
-        addCardSection(cardWelcome, "Open Source • Community Maintained • Based on Sketchware Pro", "#888888", 11, false);
+        setuppages.addView(welcomePage);
 
-        ScrollView welcomeScroll = new ScrollView(this);
-        welcomeScroll.addView(cardWelcome);
-        welcomePage.addView(welcomeScroll, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        // --- PAGE 2: Permission Page ---
+        // --- PAGE 2: Permission Setup Page ---
         LinearLayout permissionPage = createBasePageLayout();
 
+        // App Icon
         ImageView permIcon = new ImageView(this);
-        permIcon.setImageResource(R.drawable.daygreen); // Ganti dengan R.drawable.ic_permission jika ada
+        permIcon.setImageResource(R.drawable.daygreen);
         permIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        permissionPage.addView(permIcon, new LinearLayout.LayoutParams(dpToPx(80), dpToPx(80)));
+        LinearLayout.LayoutParams permIconParams = new LinearLayout.LayoutParams(dpToPx(80), dpToPx(80));
+        permIconParams.bottomMargin = dpToPx(16);
+        permissionPage.addView(permIcon, permIconParams);
 
+        // Permission Title
         TextView permTitle = new TextView(this);
-        permTitle.setText("App Permissions");
+        permTitle.setText("Permission Setup");
         permTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 24);
         permTitle.setTypeface(null, Typeface.BOLD);
         permTitle.setTextColor(Color.WHITE);
         LinearLayout.LayoutParams permTitleParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        permTitleParams.topMargin = dpToPx(8);
-        permTitleParams.bottomMargin = dpToPx(24);
+        permTitleParams.bottomMargin = dpToPx(32);
         permissionPage.addView(permTitle, permTitleParams);
 
-        LinearLayout cardPerm = createOutlineCard();
-        cbNotification = createPermissionItem("Notifications", cardPerm);
-        addSpace(cardPerm, 12);
-        cbStorage = createPermissionItem("Storage Access", cardPerm);
-
-        permissionPage.addView(cardPerm, new LinearLayout.LayoutParams(
+        // Permission Items Container
+        LinearLayout permContainer = new LinearLayout(this);
+        permContainer.setOrientation(LinearLayout.VERTICAL);
+        permContainer.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // Storage Permission Card
+        LinearLayout storageCard = createPermissionCard("📁", "Storage Access", "Allow access to your files");
+        swStorage = (Switch) storageCard.getTag();
+        permContainer.addView(storageCard);
+
+        addSpace(permContainer, 16);
+
+        // Notification Permission Card
+        LinearLayout notifCard = createPermissionCard("💻", "Device Settings", "Allow device configuration access");
+        swNotification = (Switch) notifCard.getTag();
+        permContainer.addView(notifCard);
+
+        permissionPage.addView(permContainer, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        // Spacer
+        View spacer2 = new View(this);
+        permissionPage.addView(spacer2, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f));
+
+        setuppages.addView(permissionPage);
 
         // --- PAGE 3: Finish Page ---
         LinearLayout finishPage = createBasePageLayout();
 
         ImageView finishIcon = new ImageView(this);
-        finishIcon.setImageResource(R.drawable.daygreen); // Ganti dengan R.drawable.ic_smile jika ada
+        finishIcon.setImageResource(R.drawable.daygreen);
         finishIcon.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        finishPage.addView(finishIcon, new LinearLayout.LayoutParams(dpToPx(80), dpToPx(80)));
+        LinearLayout.LayoutParams finishIconParams = new LinearLayout.LayoutParams(dpToPx(100), dpToPx(100));
+        finishIconParams.bottomMargin = dpToPx(24);
+        finishPage.addView(finishIcon, finishIconParams);
 
         TextView finishTitle = new TextView(this);
-        finishTitle.setText("All Set!");
+        finishTitle.setText("All Set! ✨");
         finishTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
         finishTitle.setTypeface(null, Typeface.BOLD);
         finishTitle.setTextColor(Color.WHITE);
         LinearLayout.LayoutParams finishTitleParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        finishTitleParams.topMargin = dpToPx(8);
-        finishTitleParams.bottomMargin = dpToPx(24);
+        finishTitleParams.bottomMargin = dpToPx(16);
         finishPage.addView(finishTitle, finishTitleParams);
 
-        LinearLayout cardFinish = createOutlineCard();
-        addCardSection(cardFinish, "Setup Complete!", "#E0E0E0", 18, true);
-        addSpace(cardFinish, 8);
-        addCardSection(cardFinish, "Congratulations! You are ready to create and share your great experiences with DayGreen.", "#CCCCCC", 14, false);
+        TextView finishSubtitle = new TextView(this);
+        finishSubtitle.setText("Ready to create amazing experiences");
+        finishSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        finishSubtitle.setTextColor(Color.parseColor("#A3F1D7"));
+        finishSubtitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams finishSubtitleParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        finishSubtitleParams.bottomMargin = dpToPx(48);
+        finishPage.addView(finishSubtitle, finishSubtitleParams);
 
-        finishPage.addView(cardFinish, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        // Loading indicator (hidden by default)
+        loadingIndicator = new ProgressBar(this, null, android.R.attr.progressBarStyleLarge);
+        loadingIndicator.setIndeterminate(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            loadingIndicator.setIndeterminateTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#A3F1D7")));
+        }
+        LinearLayout.LayoutParams loadingParams = new LinearLayout.LayoutParams(
+                dpToPx(48), dpToPx(48));
+        loadingParams.gravity = Gravity.CENTER_HORIZONTAL;
+        loadingParams.bottomMargin = dpToPx(32);
+        loadingIndicator.setVisibility(View.GONE);
+        finishPage.addView(loadingIndicator, loadingParams);
 
-        // Adding pages to ViewPager
-        setuppages.addView(welcomePage);
-        setuppages.addView(permissionPage);
+        // Add spacer untuk push content ke atas
+        View spacer3 = new View(this);
+        finishPage.addView(spacer3, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f));
+
         setuppages.addView(finishPage);
+
         background.addView(setuppages);
 
         // --- Bottom Navigation Bar ---
@@ -183,31 +235,35 @@ public class SetupActivity extends Activity {
         bottomNav.setOrientation(LinearLayout.HORIZONTAL);
         bottomNav.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        bottomNav.setGravity(Gravity.CENTER_VERTICAL);
+        bottomNav.setPadding(dpToPx(8), dpToPx(12), dpToPx(8), dpToPx(12));
 
         // Previous Button
         prevbtn = new LinearLayout(this);
         prevbtn.setOrientation(LinearLayout.VERTICAL);
-        prevbtn.setPadding(dpToPx(20), dpToPx(8), dpToPx(20), dpToPx(8));
         prevbtn.setGravity(Gravity.CENTER);
-        
+        prevbtn.setPadding(dpToPx(16), dpToPx(12), dpToPx(16), dpToPx(12));
+
         previcon = new ImageView(this);
+        previcon.setRotation(180);
         previcon.setImageResource(R.drawable.arrow_back_24px);
         previcon.setColorFilter(Color.parseColor("#889E97"));
         prevbtn.addView(previcon, new LinearLayout.LayoutParams(dpToPx(24), dpToPx(24)));
         prevbtn.setVisibility(View.GONE);
 
         // Spacer
-        LinearLayout spacer = new LinearLayout(this);
+        LinearLayout spacer4 = new LinearLayout(this);
         LinearLayout.LayoutParams spacerParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1.0f);
+        spacer4.setLayoutParams(spacerParams);
 
         // Next / Done Button
         nextbtn = new LinearLayout(this);
         nextbtn.setOrientation(LinearLayout.HORIZONTAL);
-        nextbtn.setPadding(dpToPx(20), dpToPx(8), dpToPx(20), dpToPx(8));
+        nextbtn.setPadding(dpToPx(20), dpToPx(12), dpToPx(20), dpToPx(12));
         nextbtn.setGravity(Gravity.CENTER);
 
         nexticon = new ImageView(this);
-        nexticon.setRotation((float)(180));
+        nexticon.setRotation(180);
         nexticon.setImageResource(R.drawable.arrow_back_24px);
         nexticon.setColorFilter(Color.parseColor("#A3F1D7"));
         nextbtn.addView(nexticon, new LinearLayout.LayoutParams(dpToPx(24), dpToPx(24)));
@@ -218,10 +274,13 @@ public class SetupActivity extends Activity {
         nextText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         nextText.setTypeface(null, Typeface.BOLD);
         nextText.setVisibility(View.GONE);
-        nextbtn.addView(nextText);
+        LinearLayout.LayoutParams nextTextParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        nextTextParams.leftMargin = dpToPx(8);
+        nextbtn.addView(nextText, nextTextParams);
 
         bottomNav.addView(prevbtn);
-        bottomNav.addView(spacer, spacerParams);
+        bottomNav.addView(spacer4);
         bottomNav.addView(nextbtn);
 
         background.addView(bottomNav);
@@ -256,19 +315,24 @@ public class SetupActivity extends Activity {
             getWindow().setNavigationBarContrastEnforced(false);
         }
 
-        // Styling Tombol Navigation
+        // Styling Tombol Navigation dengan Material 3 Style
         GradientDrawable prevBg = new GradientDrawable();
-        prevBg.setCornerRadius(dpToPx(16));
-        prevBg.setColor(Color.parseColor("#2A3D37"));
+        prevBg.setCornerRadius(dpToPx(12));
+        prevBg.setColor(Color.parseColor("#1B2B28"));
         prevbtn.setBackground(prevBg);
 
         GradientDrawable nextBg = new GradientDrawable();
-        nextBg.setCornerRadius(dpToPx(16));
-        nextBg.setColor(Color.parseColor("#005140"));
+        nextBg.setCornerRadius(dpToPx(12));
+        nextBg.setColor(Color.parseColor("#004D40"));
         nextbtn.setBackground(nextBg);
+
+        // Animasi pada button - Scale and Ripple
+        setupButtonAnimations(prevbtn);
+        setupButtonAnimations(nextbtn);
 
         // Click Listener Tombol
         prevbtn.setOnClickListener(v -> {
+            animateButtonPress(prevbtn);
             int current = setuppages.getCurrentItem();
             if (current > 0) {
                 setuppages.setCurrentItem(current - 1, true);
@@ -276,14 +340,13 @@ public class SetupActivity extends Activity {
         });
 
         nextbtn.setOnClickListener(v -> {
+            animateButtonPress(nextbtn);
             int current = setuppages.getCurrentItem();
             if (current < 2) {
                 setuppages.setCurrentItem(current + 1, true);
             } else {
-                // Halaman Terakhir -> Simpan status & pindah Activity
-                SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-                prefs.edit().putBoolean(KEY_SETUP_COMPLETED, true).apply();
-                navigateToMain();
+                // Tampilkan loading indicator
+                showLoadingAndFinish();
             }
         });
 
@@ -294,19 +357,81 @@ public class SetupActivity extends Activity {
 
             @Override
             public void onPageSelected(int position) {
-                // Tombol Back
-                prevbtn.setVisibility(position == 0 ? View.GONE : View.VISIBLE);
+                // Animasi tombol back
+                if (position == 0) {
+                    fadeOut(prevbtn);
+                } else {
+                    fadeIn(prevbtn);
+                }
 
                 // Switch antara Icon Panah dan Teks "Done"
                 if (position == 2) {
-                    nexticon.setVisibility(View.GONE);
-                    nextText.setVisibility(View.VISIBLE);
+                    fadeOut(nexticon);
+                    fadeIn(nextText);
                 } else {
-                    nexticon.setVisibility(View.VISIBLE);
-                    nextText.setVisibility(View.GONE);
+                    fadeIn(nexticon);
+                    fadeOut(nextText);
                 }
             }
         });
+    }
+
+    private void showLoadingAndFinish() {
+        loadingIndicator.setVisibility(View.VISIBLE);
+        
+        // Simulasi loading selama 2 detik
+        background.postDelayed(() -> {
+            SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            prefs.edit().putBoolean(KEY_SETUP_COMPLETED, true).apply();
+            navigateToMain();
+        }, 2000);
+    }
+
+    private void animateButtonPress(View button) {
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(button, "scaleX", 1.0f, 0.95f, 1.0f);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(button, "scaleY", 1.0f, 0.95f, 1.0f);
+        
+        scaleX.setDuration(200);
+        scaleY.setDuration(200);
+        
+        AnimatorSet animSet = new AnimatorSet();
+        animSet.playTogether(scaleX, scaleY);
+        animSet.start();
+    }
+
+    private void setupButtonAnimations(View button) {
+        button.setOnHoverListener((v, hasFocus) -> {
+            if (hasFocus) {
+                ObjectAnimator elevation = ObjectAnimator.ofFloat(v, "elevation", 0, dpToPx(8));
+                elevation.setDuration(150);
+                elevation.start();
+            }
+            return false;
+        });
+    }
+
+    private void fadeOut(View view) {
+        if (view.getVisibility() != View.GONE) {
+            ObjectAnimator alpha = ObjectAnimator.ofFloat(view, "alpha", view.getAlpha(), 0f);
+            alpha.setDuration(200);
+            alpha.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    view.setVisibility(View.GONE);
+                }
+            });
+            alpha.start();
+        }
+    }
+
+    private void fadeIn(View view) {
+        if (view.getVisibility() != View.VISIBLE) {
+            view.setAlpha(0f);
+            view.setVisibility(View.VISIBLE);
+            ObjectAnimator alpha = ObjectAnimator.ofFloat(view, "alpha", 0f, 1f);
+            alpha.setDuration(200);
+            alpha.start();
+        }
     }
 
     private void navigateToMain() {
@@ -321,53 +446,103 @@ public class SetupActivity extends Activity {
     private LinearLayout createBasePageLayout() {
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
-        page.setGravity(Gravity.CENTER_HORIZONTAL);
-        page.setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12));
+        page.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP);
+        page.setPadding(dpToPx(20), dpToPx(16), dpToPx(20), dpToPx(16));
         return page;
     }
 
-    private LinearLayout createOutlineCard() {
+    private LinearLayout createPermissionCard(String emoji, String title, String description) {
         LinearLayout card = new LinearLayout(this);
-        card.setOrientation(LinearLayout.VERTICAL);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
         card.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
-        // Background Transparan dengan Stroke/Outline Border
+        // Background dengan outline Material 3 style
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(Color.parseColor("#141D1A"));
         drawable.setCornerRadius(dpToPx(12));
-        drawable.setStroke(dpToPx(1), Color.parseColor("#2A3D37")); // Border outline
+        drawable.setStroke(dpToPx(1), Color.parseColor("#2A3D37"));
         card.setBackground(drawable);
+
+        LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        card.setLayoutParams(cardParams);
+
+        // Icon Container
+        LinearLayout iconContainer = new LinearLayout(this);
+        iconContainer.setOrientation(LinearLayout.VERTICAL);
+        iconContainer.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams iconContainerParams = new LinearLayout.LayoutParams(
+                dpToPx(56), dpToPx(56));
+        iconContainerParams.rightMargin = dpToPx(16);
+
+        // Icon Background
+        GradientDrawable iconBg = new GradientDrawable();
+        iconBg.setColor(Color.parseColor("#1B2B28"));
+        iconBg.setCornerRadius(dpToPx(12));
+        iconContainer.setBackground(iconBg);
+
+        TextView iconEmoji = new TextView(this);
+        iconEmoji.setText(emoji);
+        iconEmoji.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+        iconContainer.addView(iconEmoji, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        card.addView(iconContainer, iconContainerParams);
+
+        // Text Container
+        LinearLayout textContainer = new LinearLayout(this);
+        textContainer.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams textContainerParams = new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
+        textContainer.setLayoutParams(textContainerParams);
+
+        // Title
+        TextView titleText = new TextView(this);
+        titleText.setText(title);
+        titleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        titleText.setTypeface(null, Typeface.BOLD);
+        titleText.setTextColor(Color.WHITE);
+        titleText.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        textContainer.addView(titleText);
+
+        // Description
+        TextView descText = new TextView(this);
+        descText.setText(description);
+        descText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        descText.setTextColor(Color.parseColor("#889E97"));
+        LinearLayout.LayoutParams descParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        descParams.topMargin = dpToPx(4);
+        descText.setLayoutParams(descParams);
+        textContainer.addView(descText, descParams);
+
+        card.addView(textContainer, textContainerParams);
+
+        // Switch Material 3 Style
+        Switch switchView = new Switch(this);
+        switchView.setTrackDrawable(createMaterial3SwitchTrack());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            switchView.setThumbTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#A3F1D7")));
+            switchView.setTrackTintList(android.content.res.ColorStateList.valueOf(Color.parseColor("#2A3D37")));
+        }
+        LinearLayout.LayoutParams switchParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        switchParams.leftMargin = dpToPx(12);
+        card.addView(switchView, switchParams);
+
+        // Store switch reference di tag
+        card.setTag(switchView);
+
         return card;
     }
 
-    private CheckBox createPermissionItem(String title, LinearLayout parent) {
-        LinearLayout row = new LinearLayout(this);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
-
-        TextView tv = new TextView(this);
-        tv.setText(title);
-        tv.setTextColor(Color.parseColor("#F5F5F5"));
-        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-
-        CheckBox cb = new CheckBox(this);
-
-        LinearLayout.LayoutParams tvParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
-        row.addView(tv, tvParams);
-        row.addView(cb);
-
-        parent.addView(row);
-        return cb;
-    }
-
-    private void addCardSection(LinearLayout card, String text, String colorHex, int spSize, boolean isBold) {
-        TextView tv = new TextView(this);
-        tv.setText(text);
-        tv.setTextColor(Color.parseColor(colorHex));
-        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, spSize);
-        if (isBold) tv.setTypeface(null, Typeface.BOLD);
-        card.addView(tv);
+    private GradientDrawable createMaterial3SwitchTrack() {
+        GradientDrawable track = new GradientDrawable();
+        track.setCornerRadius(dpToPx(12));
+        track.setColor(Color.parseColor("#2A3D37"));
+        return track;
     }
 
     private void addSpace(LinearLayout parent, int dp) {
